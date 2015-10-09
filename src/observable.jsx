@@ -1,32 +1,25 @@
 
 export class Observable {
 
-  static _captured = [];
-  static enterCapture() {
-
-  }
-  static stopCapture() {
-
-  }
-
-  static getCaptured() {
-
-  }
-
   constructor(value) {
     this._listeners = [];
-    this._value = value;
+  }
+
+  reset() {
+    delete this._value;
   }
 
   /**
    * Get the value of the observable.
    */
   get() {
-    this.emit('accessed'); // useful to track which observables are being
     return this._value;
   }
 
   set(value) {
+
+    // No need to change.
+    if (this._value === value) return;
 
     this._value = value;
 
@@ -34,32 +27,61 @@ export class Observable {
     if (this._listeners.length === 0) return;
 
     for (let l of this._listeners) {
-        l.call(this, value);
+        l(value);
     }
 
   }
 
-  destroy() {
+  changed(fn) {
+    this._listeners.push(fn);
 
+    // listeners are always given the current value if it is available upon subscribing.
+    if (this.hasOwnProperty('_value')) fn(this._value);
   }
 
-  negate() {
-
+  unsubscribe(fn) {
+    let idx = this._listeners.indexOf(fn);
+    if (idx > -1) this._listeners.splice(idx, 1);
   }
 
   /**
-   * Create DOM elements.
-   * NOTE these elements are *not* compiled and this
-   * 	method is just used to have some innerHTML given by components.
+   * Remove all listeners and prepare to free the object.
    */
-  html() {
-
+  destroy() {
+    delete this._listeners;
+    delete this._value;
   }
 
 }
 
 
 export class ArrayObservable {
+
+  constructor(a) {
+    this.length = new Observable(0);
+    this.update(a);
+  }
+
+  update(arr) {
+    assert(a instanceof Array);
+
+    // the array hasn't changed.
+    if (arr === this._value);
+
+    // empty the array ?
+    for (let a of arr) {
+
+    }
+
+    // update the length.
+    this.length.set(this._value.length);
+  }
+
+  // Get observable on position i
+  // or set the object at the given position.
+  at(i, v) {
+
+  }
 
   destroy() {
     for (let i of this.items) {
@@ -80,11 +102,31 @@ export class ObjectObservable {
   }
 
   update(obj) {
-
+    for (let name in obj) {
+      if (this[name])
+        this[name].set(obj[name]);
+      else
+        this[name] = obs(obj[name]);
+    }
   }
 
 }
 
+export function obs(o) {
+  let cls = null;
+
+  if (o instanceof Array) {
+    cls = ArrayObservable;
+  } else if (o instanceof Date) {
+    cls = Observable;
+  } else if (typeof o === 'object') {
+    cls = ObjectObservable;
+  } else {
+    cls = Observable;
+  }
+
+  return new cls(o);
+}
 
 export function o(...args) {
   let l = args.length;

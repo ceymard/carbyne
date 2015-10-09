@@ -1,0 +1,11 @@
+{
+  "name": "elt",
+  "version": "0.0.1",
+  "repository": "https://github.com/ceymard/el",
+  "description": "some description",
+  "license": "MIT",
+  "main": "./el.js",
+  "dependencies": {
+    "elt": "."
+  }
+}
