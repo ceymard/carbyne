@@ -22,13 +22,17 @@ export class Component {
 
   }
 
-  compile = () => {
-    // FIXME WE WANT THEM OBSERVABLES
-    this.data = Object.assign({}, this.initial_data);
+  compile(additional_data = {}) {
+    this.data = Object.assign({}, this.initial_data, additional_data);
+    let attrs = this.attrs;
 
     for (let p of this.props) {
-      // forward bindings into data. Should they all be observable ?
+      if (p in attrs) {
+        this.data[p] = attrs[p];
+      }
     }
+
+    // FIXME make this.data an observable.
 
     // hmm ?? should I call the view() here ?
     // NOTE $content should be set up somewhere.
@@ -138,12 +142,12 @@ export class HtmlComponent extends Component {
     let e = document.createElement(this.elt);
 
     for (let attribute_name in this.attrs) {
-      let att = attrs[a];
+      let att = this.attrs[attribute_name];
 
       if (att instanceof Observable) {
         att.changed((val) => e.setAttribute(attribute_name, val));
       } else {
-        e.setAttribute(attribute_name, attrs[a]);
+        e.setAttribute(attribute_name, att);
       }
     }
 

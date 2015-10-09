@@ -1,2 +1,2 @@
 #!/bin/bash
-babel -P elt -s inline --stage 0 -d elt src
+babel -L es6.forOf,es6.classes,es6.templateLiterals -P elt -s inline --stage 0 -d elt src
