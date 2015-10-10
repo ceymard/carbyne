@@ -1,4 +1,6 @@
 
+let OBJ_PROTO = Object.getPrototypeOf({});
+
 export class Observable {
 
   constructor(value) {
@@ -106,14 +108,23 @@ export class ObservableObject {
   constructor(o) {
     for (let name of Object.getOwnPropertyNames(o)) {
       // For now, we don't check for recursion.
-      this[name] = new Observable(o[name]);
+      this.define(name, o[name]);
     }
+  }
+
+  define(name, value) {
+    let o = new Observable(value);
+    Object.defineProperty(this, name, {
+      enumerable: true,
+      set: (value) => o.set(value),
+      get: () => o
+    })
   }
 
   /**
    * Bulk update of a datascope.
    */
-  update(o) {
+  set(o) {
 
   }
 }
@@ -122,6 +133,15 @@ export class ObservableObject {
 export function o(...args) {
   let l = args.length;
   let fn = args[args.length - 1];
+
+  // Just creating an observable.
+  if (l === 1) {
+    let a = args[0];
+    if (a && Object.getPrototypeOf(a) === OBJ_PROTO)
+      return new ObservableObject(a);
+    return new Observable(a);
+  }
+
   let deps = [];
   let res = new Observable();
 

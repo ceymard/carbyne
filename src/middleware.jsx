@@ -6,20 +6,6 @@ export var Attr = function Attr(obj, cpt) {
 
 };
 
-export var If = function If(obs, cpt) {
-
-};
-
-/**
- * Decorate the component so that
- * @param  {[type]} 2        [description]
- * @param  {[type]} function Repeat(obs,   trackBy, repeater [description]
- * @return {[type]}          [description]
- */
-export var Repeat = function Repeat(obs, trackBy, repeater) {
-
-};
-
 export var On = function On(evt_name, cbk) {
 
   return function (component) {
@@ -40,4 +26,14 @@ export class Middleware {
 
 }
 
+export function Click(fn) {
+
+  return function (component) {
+    component.$node.addEventListener('click', fn);
+  }
+
+}
+
 exports.Bind = require('./middleware/bind');
+exports.If = require('./middleware/if');
+exports.Repeat = require('./middleware/repeat');

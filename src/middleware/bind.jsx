@@ -10,7 +10,6 @@ function Bind(observable, opts) {
 
 };
 
-
 class BindMiddleware extends Middleware {
 
   $component = null;
@@ -28,22 +27,35 @@ class BindMiddleware extends Middleware {
     let tag = node.tagName.toLowerCase();
 
     if (tag === 'input') {
+
+      let cbk = (evt) => {
+        let val = node.value;
+        // console.log(val);
+        observable.set(val);
+      }
       let type = node.type.toLowerCase() || 'text';
 
+
       switch (type) {
+        case 'color':
+        case 'range':
+          observable.onchange((val) => node.value = val);
+          node.addEventListener('input', cbk);
+          break;
+        case 'radio':
+          observable.onchange((val) => node.checked = node.value === val);
+          node.addEventListener('change', cbk);
+          break;
+        case 'checkbox':
+          observable.onchange((val) => val ? node.checked = true : node.checked = false);
+          node.addEventListener('change', () => observable.set(node.checked));
+          break;
         case 'number':
         case 'text':
-          observable.onchange((val) => node.value = val);
-
-          node.addEventListener('keyup', (evt) => {
-            let val = node.value;
-            // should update the values elsewhere !
-            observable.set(val);
-            // console.log(val, evt);
-          });
-          break;
+        case 'password':
         default:
-          // Do something else ?
+        observable.onchange((val) => node.value = val);
+        node.addEventListener('keyup', cbk);
       }
 
     } else if (tag === 'textarea') {
