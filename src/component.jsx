@@ -1,6 +1,5 @@
 
-import {Observable, ObservableObject} from 'elt/observable';
-import * as p from 'elt/observable';
+import {Observable, ObservableObject} from './observable';
 
 export class Component {
 
