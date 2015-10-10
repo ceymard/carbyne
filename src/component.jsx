@@ -5,6 +5,7 @@ import * as p from 'elt/observable';
 export class Component {
 
   $node = null;
+  $parentNode = null;
   $content = null;
   $parentComponent = null;
   $middleware = [];
@@ -44,13 +45,14 @@ export class Component {
       }
     }
 
-    // FIXME make this.data an observable.
-
-    // hmm ?? should I call the view() here ?
-    // NOTE $content should be set up somewhere.
     this.$view = this.view(this.data);
     this.$view.setParentComponent(this);
     this.$content = this.$node = this.$view.$node;
+
+    for (let m of this.$middleware) {
+      let res = new m(this);
+      // should store them...
+    }
   }
 
   view() {
@@ -117,6 +119,24 @@ export class Component {
       // FIXME probably not.
       content.appendChild(document.createTextNode(JSON.stringify(child)));
     }
+  }
+
+  unmount() {
+    // remove from the parent DOM node if it is mounted
+    // destroy the data, observables and such.
+    if (!this.$parentNode) throw new Error('this node was not mounted');
+    this.$parentNode.removeChild(this.$node);
+    this.$parentNode = null;
+    this.data.destroy();
+  }
+
+  mount(domnode) {
+    if (this.$parentNode) {
+      // maybe we could just let the node be mounted elsewhere ?
+      throw new Error('already mounted !');
+    }
+    this.$parentNode = domnode;
+    domnode.appendChild(this.$node);
   }
 
 }
