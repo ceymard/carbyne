@@ -8,6 +8,7 @@ export class Component {
   $parentComponent = null;
   $middleware = [];
   $unloaders = [];
+  $children = [];
 
   // List of properties set in the attributes that will be pulled into
   // data as .props
@@ -50,7 +51,9 @@ export class Component {
 
     this.$view = v;
 
+    // Special case, we can't append child here since basically we're wrapping for other components.
     this.$view.setParentComponent(this);
+    this.$children.push(this.$view);
     this.$node = this.$view.$node;
 
     this.link();
@@ -66,7 +69,6 @@ export class Component {
       m.link();
     }
 
-    return null;
   }
 
   setParentComponent(component) {
@@ -104,12 +106,18 @@ export class Component {
 
     } else if (child instanceof Component) {
 
-      child.setParentComponent(elt);
+      child.setParentComponent(this);
+      this.$children.push(child);
       // Append its html node.
       $node.appendChild(child.$node);
 
     } else {
+      // If the node is nothing mountable, then we shall try to render it
+      // on a text node.
+
       let txt = document.createTextNode('');
+
+      // We use o.onchange to handle both observable and regular values.
       this.$unloaders.push(o.onchange(child, (val) => {
         if (val === undefined || val === null) val = '';
         else if (typeof val === 'object') val = JSON.stringify(val);
@@ -120,26 +128,49 @@ export class Component {
     }
   }
 
-  unmount() {
-    // remove from the parent DOM node if it is mounted
-    // destroy the data, observables and such.
-    if (!this.$parentNode) throw new Error('this node was not mounted');
-    this.$parentNode.removeChild(this.$node);
-    this.$parentNode = null;
-    // this.data.destroy(); -- ?
+  removeChild(child) {
+    let idx = this.$children.indexOf(child);
+    if (idx > -1) {
+      this.$children.splice(idx, 1);
+    }
+  }
+
+  unload() {
 
     for (let u of this.$unloaders) {
       u.call(this);
     }
+
+    for (let m of this.$middleware) {
+      m.unload();
+    }
+
+    for (let c of this.$children) {
+      c.unload();
+    }
+
+    this.$unloaders = [];
+  }
+
+  unmount() {
+
+    for (let c of this.$children) {
+      c.unmount();
+    }
+
+    this.unload();
+
+    // remove the component from its parent.
+    if (this.$parentComponent) this.$parentComponent.removeChild(this);
+    this.$node = null;
   }
 
   mount(domnode) {
-    if (this.$parentNode) {
-      // maybe we could just let the node be mounted elsewhere ?
-      throw new Error('this component is already mounted');
-    }
-    this.$parentNode = domnode;
     domnode.appendChild(this.$node);
+  }
+
+  toString() {
+    return this.constructor.name;
   }
 
 }
@@ -157,41 +188,45 @@ export class HtmlComponent extends Component {
     this.elt = elt;
   }
 
+  toString() {
+    return `<${this.elt}>`;
+  }
+
   /**
    * Create the html node.
    */
-  view(data, children) {
+  compile(data, children) {
 
     let e = document.createElement(this.elt);
 
     for (let attribute_name in this.attrs) {
       let att = this.attrs[attribute_name];
-
-      if (att instanceof Observable) {
-        // added to unloaders to make sure we don't
-        this.$unloaders.push(att.onchange((val) => {
-          if (typeof val === 'object')
-            e.setAttribute(attribute_name, JSON.stringify(val));
-          else
-            e.setAttribute(attribute_name, val);
-        }));
-      } else {
-        e.setAttribute(attribute_name, att);
-      }
+      this.$unloaders.push(o.onchange(att, (val) => {
+        if (typeof val === 'object')
+          e.setAttribute(attribute_name, JSON.stringify(val));
+        else
+          e.setAttribute(attribute_name, val);
+      }));
     }
 
-    // empty setParentComponent as this one shall never have one.
-    return {$node: e, setParentComponent() { }};
-  }
-
-  compile() {
-
-    super();
+    this.$node = e;
 
     for (let c of this.children) {
       this.appendChild(c);
     }
 
+    this.link();
+
+  }
+
+  unmount() {
+    // remove from the parent DOM node if it is mounted
+    // destroy the data, observables and such.
+    if (!this.$node.parentNode) throw new Error('this node was not mounted');
+    this.$node.parentNode.removeChild(this.$node);
+    this.$node = null;
+
+    super();
   }
 
 }

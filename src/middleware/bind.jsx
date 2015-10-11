@@ -1,5 +1,6 @@
 
 import {Middleware} from '../middleware';
+import {Observable} from '../observable';
 
 function Bind(observable, opts) {
   if (!observable) return;
@@ -16,6 +17,8 @@ class BindMiddleware extends Middleware {
 
   constructor(component, observable, opts) {
     super(component);
+
+    assert(observable instanceof Observable);
 
     this.observable = observable;
     this.opts = opts;
@@ -48,15 +51,15 @@ class BindMiddleware extends Middleware {
         case 'week':
         case 'month':
         case 'datetime-local':
-          observable.onchange((val) => node.value = val);
+          this.$unloaders.push(observable.onchange((val) => node.value = val));
           node.addEventListener('input', cbk);
           break;
         case 'radio':
-          observable.onchange((val) => node.checked = node.value === val);
+          this.$unloaders.push(observable.onchange((val) => node.checked = node.value === val));
           node.addEventListener('change', cbk);
           break;
         case 'checkbox':
-          observable.onchange((val) => val ? node.checked = true : node.checked = false);
+          this.$unloaders.push(observable.onchange((val) => val ? node.checked = true : node.checked = false));
           node.addEventListener('change', () => observable.set(node.checked));
           break;
         case 'number':
@@ -64,7 +67,7 @@ class BindMiddleware extends Middleware {
         case 'password':
         case 'search':
         default:
-        observable.onchange((val) => node.value = val);
+        this.$unloaders.push(observable.onchange((val) => node.value = val));
         node.addEventListener('keyup', cbk);
         node.addEventListener('input', cbk);
         node.addEventListener('change', cbk);

@@ -15,10 +15,16 @@ export class Middleware {
 
   link() { }
 
-  unmount() {
+  unload() {
     for (let u of this.$unloaders) {
       u.call(this);
     }
+
+    this.$unloaders = [];
+  }
+
+  unmount() {
+
   }
 
 }
