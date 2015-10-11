@@ -5,6 +5,7 @@
 export class Middleware {
 
   $component = null;
+  $unloaders = [];
 
   constructor(cmp) {
     this.$component = cmp;
@@ -13,6 +14,12 @@ export class Middleware {
   view() { }
 
   link() { }
+
+  unmount() {
+    for (let u of this.$unloaders) {
+      u.call(this);
+    }
+  }
 
 }
 

@@ -17,6 +17,7 @@ class ClickMiddleware extends Middleware {
   }
 
   link() {
+    // No need to unregister this.
     this.$component.$node.addEventListener('click', this.cbk);
   }
 

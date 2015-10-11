@@ -171,3 +171,30 @@ export function o(...args) {
 
   return res;
 }
+
+/**
+ * Get the current value of the observable, or the value itself if the
+ * provided parameter was not an observable.
+ * @param  {[type]} v [description]
+ * @return {[type]}   [description]
+ */
+o.get = function get(v) {
+  if (v instanceof Observable) return v.get();
+  return v;
+};
+
+
+/**
+ * Setup an onchange event on the observable, or just call the
+ * onchange value once if the provided o is not an observable.
+ * @param  {[type]}   o  [description]
+ * @param  {Function} fn [description]
+ * @return {[type]}      [description]
+ */
+o.onchange = function onchange(o, fn) {
+  if (o instanceof Observable) return o.onchange(fn);
+  // the object is not observable, so the onchange value is immediately called.
+  fn(o);
+  // return a function that does nothing, since nothing is being registered.
+  return function() { };
+}

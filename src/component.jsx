@@ -1,5 +1,5 @@
 
-import {Observable, ObservableObject} from './observable';
+import {o, Observable, ObservableObject} from './observable';
 
 export class Component {
 
@@ -7,6 +7,7 @@ export class Component {
   $parentNode = null;
   $parentComponent = null;
   $middleware = [];
+  $unloaders = [];
 
   // List of properties set in the attributes that will be pulled into
   // data as .props
@@ -96,32 +97,26 @@ export class Component {
         this.appendChild(c);
       }
 
-    } else if (typeof child === 'string' || child instanceof Number || child instanceof Boolean) {
-      // Simple text node.
-      // Note
-      $node.appendChild(document.createTextNode(child.toString()));
-
-    } else if (child instanceof Observable) {
-      // A text node that will be bound
-      // child = new TextObservable(child);
-      let txt = document.createTextNode('null');
-      // FIXME should do some stringify.
-      child.onchange((val) => {
-        if (typeof val === 'object') val = JSON.stringify(val);
-        txt.textContent = val.toString();
-      });
-      $node.appendChild(txt);
-
     } else if (child instanceof Node) {
+
+      // A DOM Node is simply appended to $node.
       $node.appendChild(child);
+
     } else if (child instanceof Component) {
-      // Get its HTML node.
+
       child.setParentComponent(elt);
+      // Append its html node.
       $node.appendChild(child.$node);
+
     } else {
-      // When all else fail, then try to at least create a JSON-ificated version of it.
-      // FIXME probably not.
-      $node.appendChild(document.createTextNode(JSON.stringify(child)));
+      let txt = document.createTextNode('');
+      this.$unloaders.push(o.onchange(child, (val) => {
+        if (val === undefined || val === null) val = '';
+        else if (typeof val === 'object') val = JSON.stringify(val);
+        txt.textContent = val.toString();
+      }));
+
+      $node.appendChild(txt);
     }
   }
 
@@ -131,33 +126,20 @@ export class Component {
     if (!this.$parentNode) throw new Error('this node was not mounted');
     this.$parentNode.removeChild(this.$node);
     this.$parentNode = null;
-    this.data.destroy();
+    // this.data.destroy(); -- ?
+
+    for (let u of this.$unloaders) {
+      u.call(this);
+    }
   }
 
   mount(domnode) {
     if (this.$parentNode) {
       // maybe we could just let the node be mounted elsewhere ?
-      throw new Error('already mounted !');
+      throw new Error('this component is already mounted');
     }
     this.$parentNode = domnode;
     domnode.appendChild(this.$node);
-  }
-
-}
-
-
-/**
- *
- */
-export class TextObservable extends Component {
-
-  constructor(obs) {
-    super();
-    this.$node = document.createTextNode('');
-
-    // Whenever the observed change, just set its value to its string content.
-    // obs.onchange((v) => this.$node.textContent = v.toString());
-    // obs.onchange((v) => this.$node.textContent);
   }
 
 }
@@ -186,12 +168,13 @@ export class HtmlComponent extends Component {
       let att = this.attrs[attribute_name];
 
       if (att instanceof Observable) {
-        att.onchange((val) => {
+        // added to unloaders to make sure we don't
+        this.$unloaders.push(att.onchange((val) => {
           if (typeof val === 'object')
             e.setAttribute(attribute_name, JSON.stringify(val));
           else
             e.setAttribute(attribute_name, val);
-        });
+        }));
       } else {
         e.setAttribute(attribute_name, att);
       }
