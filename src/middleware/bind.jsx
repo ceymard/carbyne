@@ -12,18 +12,22 @@ function Bind(observable, opts) {
 
 class BindMiddleware extends Middleware {
 
-  $component = null;
   $creator = Bind;
 
   constructor(component, observable, opts) {
-    super();
+    super(component);
 
-    this.$component = component;
     this.observable = observable;
     this.opts = opts;
 
+  }
+
+  link() {
+
     // We're calling bind on a classic HTML node.
-    let node = component.$node;
+    let observable = this.observable;
+    let opts = this.opts;
+    let node = this.$component.$node;
     let tag = node.tagName.toLowerCase();
 
     if (tag === 'input') {

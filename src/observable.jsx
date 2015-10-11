@@ -21,6 +21,7 @@ export class Observable {
   }
 
   set(value) {
+    // FIXME need to check if the value is a promise or an observable.
 
     // No need to change.
     if (this._value === value) return;
@@ -125,6 +126,13 @@ export class ObservableObject {
    * Bulk update of a datascope.
    */
   set(o) {
+
+    for (let name in o) {
+      if (name in this)
+        this.define(name, o[name])
+      else
+        this[name] = o[name];
+    }
 
   }
 }

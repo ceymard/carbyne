@@ -5,7 +5,6 @@ export class Component {
 
   $node = null;
   $parentNode = null;
-  $content = null;
   $parentComponent = null;
   $middleware = [];
 
@@ -18,16 +17,17 @@ export class Component {
   initial_data = {}
 
   // Should the view be built whenever a component is instanciated ?
-  constructor(attrs = {}) {
+  constructor(attrs = {}, children = []) {
     attrs = attrs || {};
 
     // Handle middleware.
     if (attrs.$$) {
-        this.$middleware = attrs.$$ instanceof Array ? attrs.$$ : [attrs.$$];
+        this.$middleware = (attrs.$$ instanceof Array ? attrs.$$ : [attrs.$$]).map((mc) => mc(this)).filter((e) => e != null);
         delete attrs.$$;
     }
 
     this.attrs = attrs;
+    this.children = children;
 
   }
 
@@ -44,29 +44,28 @@ export class Component {
       }
     }
 
-    this.$view = this.view(this.data);
-    this.$view.setParentComponent(this);
-    this.$content = this.$node = this.$view.$node;
+    let v = null;
+    v = this.view(this.data, this.children);
 
-    for (let m of this.$middleware) {
-      let res = new m(this);
-      // should store them...
-    }
+    this.$view = v;
+
+    this.$view.setParentComponent(this);
+    this.$node = this.$view.$node;
+
+    this.link();
   }
 
   view() {
     return null;
   }
 
-  setContentInsertion = (component) => {
-    return {
-      // Bound function because we want to access the this.
-      view: (data, next) => {
-        let elt = next(data);
-        this.$content = elt.$node;
-        return elt;
-      }
+  link() {
+    // This is typically when middlewares and the component should comunicate.
+    for (let m of this.$middleware) {
+      m.link();
     }
+
+    return null;
   }
 
   setParentComponent(component) {
@@ -89,12 +88,18 @@ export class Component {
    */
   appendChild(child) {
     // content is a Node.
-    let content = this.$content || this.$node;
+    let $node = this.$node;
 
-    if (typeof child === 'string' || child instanceof Number || child instanceof Boolean) {
+    if (Array.isArray(child)) {
+
+      for (let c of child) {
+        this.appendChild(c);
+      }
+
+    } else if (typeof child === 'string' || child instanceof Number || child instanceof Boolean) {
       // Simple text node.
       // Note
-      content.appendChild(document.createTextNode(child.toString()));
+      $node.appendChild(document.createTextNode(child.toString()));
 
     } else if (child instanceof Observable) {
       // A text node that will be bound
@@ -105,18 +110,18 @@ export class Component {
         if (typeof val === 'object') val = JSON.stringify(val);
         txt.textContent = val.toString();
       });
-      content.appendChild(txt);
+      $node.appendChild(txt);
 
     } else if (child instanceof Node) {
-      content.appendChild(c);
+      $node.appendChild(child);
     } else if (child instanceof Component) {
       // Get its HTML node.
       child.setParentComponent(elt);
-      content.appendChild(child.$node);
+      $node.appendChild(child.$node);
     } else {
       // When all else fail, then try to at least create a JSON-ificated version of it.
       // FIXME probably not.
-      content.appendChild(document.createTextNode(JSON.stringify(child)));
+      $node.appendChild(document.createTextNode(JSON.stringify(child)));
     }
   }
 
@@ -162,8 +167,8 @@ export class TextObservable extends Component {
  *
  */
 export class HtmlComponent extends Component {
-  constructor(elt, attrs = {}) {
-    super(attrs);
+  constructor(elt, attrs = {}, children) {
+    super(attrs, children);
 
     assert('string' === typeof elt);
 
@@ -173,7 +178,7 @@ export class HtmlComponent extends Component {
   /**
    * Create the html node.
    */
-  view(data) {
+  view(data, children) {
 
     let e = document.createElement(this.elt);
 
@@ -194,6 +199,16 @@ export class HtmlComponent extends Component {
 
     // empty setParentComponent as this one shall never have one.
     return {$node: e, setParentComponent() { }};
+  }
+
+  compile() {
+
+    super();
+
+    for (let c of this.children) {
+      this.appendChild(c);
+    }
+
   }
 
 }
@@ -220,22 +235,25 @@ export function elt(elt, attrs, ...children) {
 
   if ((typeof elt) === 'string') {
     // Create a simple Html node.
-    elt = new HtmlComponent(elt, attrs);
+    elt = new HtmlComponent(elt, attrs, children);
 
   } else if (elt instanceof Function) {
+    // instanceof Function because elt is a constructor at this stage, not
+    // an actual instance of a component.
 
     // Create a component, as a constructor was given to us as first argument.
     elt = new elt(attrs, children);
 
+  } else {
+    // FIXME should trigger some kind of error here.
   }
 
   elt.compile();
 
-  // For each child, construct their node.
-  for (let c of children) {
-    if (typeof c === 'undefined') continue;
-    elt.appendChild(c);
-  }
+  // for (let c of children) {
+  //   if (typeof c === 'undefined') continue;
+  //   elt.appendChild(c);
+  // }
 
   // By this point, elt.$node is ready for insertion into the DOM.
   return elt;
