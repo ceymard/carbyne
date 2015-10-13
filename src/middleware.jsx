@@ -2,19 +2,19 @@
  * Core middleware for el.
  */
 
-export function Attr(obj) {
+export var Attr = arity(2, function Attr(obj, cpt) {
 
-}
+});
 
-export function If(obs) {
+export var If = arity(2, function If(obs, cpt) {
 
-}
+});
 
-export function Repeat(obs, trackBy, children) {
+export var Repeat = arity(2, function Repeat(obs, trackBy, repeater) {
 
-}
+});
 
-export function On(evt_name, cbk) {
+export var On = arity(3, function On(evt_name, cbk) {
 
   return function (node) {
     // Est-ce qu'on peut se unsubscribe ?
@@ -22,4 +22,4 @@ export function On(evt_name, cbk) {
     return node;
   }
 
-}
+});
