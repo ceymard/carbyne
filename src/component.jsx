@@ -1,11 +1,13 @@
 
-import {Observable} from 'elt/observable';
+import {Observable, ObservableObject} from 'elt/observable';
+import * as p from 'elt/observable';
 
 export class Component {
 
   $node = null;
   $content = null;
   $parentComponent = null;
+  $middleware = [];
 
   // List of properties set in the attributes that will be pulled into
   // data as .props
@@ -17,13 +19,23 @@ export class Component {
 
   // Should the view be built whenever a component is instanciated ?
   constructor(attrs = {}) {
+    attrs = attrs || {};
+
+    // Handle middleware.
+    if (attrs.$$) {
+        this.$middleware = attrs.$$ instanceof Array ? attrs.$$ : [attrs.$$];
+        delete attrs.$$;
+    }
 
     this.attrs = attrs;
 
   }
 
   compile(additional_data = {}) {
-    this.data = Object.assign({}, this.initial_data, additional_data);
+
+    let data = Object.assign({}, this.initial_data, additional_data);
+    this.data = new ObservableObject(data);
+
     let attrs = this.attrs;
 
     for (let p of this.props) {
@@ -85,8 +97,14 @@ export class Component {
 
     } else if (child instanceof Observable) {
       // A text node that will be bound
-      child = new TextObservable(c);
-      content.appendChild(child.$node);
+      // child = new TextObservable(child);
+      let txt = document.createTextNode('null');
+      // FIXME should do some stringify.
+      child.onchange((val) => {
+        if (typeof val === 'object') val = JSON.stringify(val);
+        txt.textContent = val.toString();
+      });
+      content.appendChild(txt);
 
     } else if (child instanceof Node) {
       content.appendChild(c);
@@ -114,8 +132,8 @@ export class TextObservable extends Component {
     this.$node = document.createTextNode('');
 
     // Whenever the observed change, just set its value to its string content.
-    // obs.changed((v) => this.$node.textContent = v.toString());
-    obs.changed((v) => this.appendChild);
+    // obs.onchange((v) => this.$node.textContent = v.toString());
+    // obs.onchange((v) => this.$node.textContent);
   }
 
 }
@@ -125,13 +143,12 @@ export class TextObservable extends Component {
  *
  */
 export class HtmlComponent extends Component {
-  constructor(elt, attrs) {
-    super();
+  constructor(elt, attrs = {}) {
+    super(attrs);
 
     assert('string' === typeof elt);
 
     this.elt = elt;
-    this.attrs = attrs;
   }
 
   /**
@@ -145,7 +162,12 @@ export class HtmlComponent extends Component {
       let att = this.attrs[attribute_name];
 
       if (att instanceof Observable) {
-        att.changed((val) => e.setAttribute(attribute_name, val));
+        att.onchange((val) => {
+          if (typeof val === 'object')
+            e.setAttribute(attribute_name, JSON.stringify(val));
+          else
+            e.setAttribute(attribute_name, val);
+        });
       } else {
         e.setAttribute(attribute_name, att);
       }

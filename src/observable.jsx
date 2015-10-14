@@ -3,6 +3,8 @@ export class Observable {
 
   constructor(value) {
     this._listeners = [];
+    this._destroyed = false;
+    if (value !== undefined) this.set(value);
   }
 
   reset() {
@@ -32,24 +34,25 @@ export class Observable {
 
   }
 
-  changed(fn) {
-    this._listeners.push(fn);
+  onchange(fn) {
 
     // listeners are always given the current value if it is available upon subscribing.
     if (this.hasOwnProperty('_value')) fn(this._value);
+
+    if (this._destroyed) return;
+
+    this._listeners.push(fn);
+
+    return () => {
+      let idx = this._listeners.indexOf(fn);
+      this._listeners.splice(idx, 1);
+    }
   }
 
-  unsubscribe(fn) {
-    let idx = this._listeners.indexOf(fn);
-    if (idx > -1) this._listeners.splice(idx, 1);
-  }
-
-  /**
-   * Remove all listeners and prepare to free the object.
-   */
+  // This Observable will never update anyone again.
   destroy() {
-    delete this._listeners;
-    delete this._value;
+    this._destroyed = true;
+    this._listeners = [];
   }
 
 }
@@ -57,11 +60,18 @@ export class Observable {
 
 export class ArrayObservable {
 
+  length = new Observable();
+
   constructor(a) {
     this.length = new Observable(0);
     this.update(a);
   }
 
+  /**
+   * Update this array with another array.
+   * Performs optimisation ?
+   * @param  {Array} arr The array with the newer values.
+   */
   update(arr) {
     assert(a instanceof Array);
 
@@ -91,49 +101,45 @@ export class ArrayObservable {
 
 }
 
+export class ObservableObject {
 
-/**
- * This object only creates keys whenever they are needed.
- */
-export class ObjectObservable {
-
-  constructor(obj) {
-    this.update(obj);
-  }
-
-  update(obj) {
-    for (let name in obj) {
-      if (this[name])
-        this[name].set(obj[name]);
-      else
-        this[name] = obs(obj[name]);
+  constructor(o) {
+    for (let name of Object.getOwnPropertyNames(o)) {
+      // For now, we don't check for recursion.
+      this[name] = new Observable(o[name]);
     }
   }
 
-}
+  /**
+   * Bulk update of a datascope.
+   */
+  update(o) {
 
-export function obs(o) {
-  let cls = null;
-
-  if (o instanceof Array) {
-    cls = ArrayObservable;
-  } else if (o instanceof Date) {
-    cls = Observable;
-  } else if (typeof o === 'object') {
-    cls = ObjectObservable;
-  } else {
-    cls = Observable;
   }
-
-  return new cls(o);
 }
+
 
 export function o(...args) {
   let l = args.length;
   let fn = args[args.length - 1];
   let deps = [];
+  let res = new Observable();
 
-  for (let i = 0; i < l - 2; i++) {
-      // compute the dependencies here.
-  }
+  let not_resolved = 0;
+
+  // We only get the observable objects.
+  let observables = Array.prototype.slice.call(arguments, 0, arguments.length - 2);
+  observables.forEach((o, i) => {
+    resolved = false;
+    deps.push(null);
+
+    o.onchange((v) => {
+      if (!resolved) not_resolved -= 1;
+      resolved = true;
+      deps[i] = v;
+      if (not_resolved === 0) res.set(fn.apply(null, deps));
+    });
+  });
+
+  return res;
 }

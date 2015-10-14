@@ -2,13 +2,13 @@
  * Core middleware for el.
  */
 
-export var Attr = arity(2, function Attr(obj, cpt) {
+export var Attr = function Attr(obj, cpt) {
 
-});
+};
 
-export var If = arity(2, function If(obs, cpt) {
+export var If = function If(obs, cpt) {
 
-});
+};
 
 /**
  * Decorate the component so that
@@ -16,16 +16,50 @@ export var If = arity(2, function If(obs, cpt) {
  * @param  {[type]} function Repeat(obs,   trackBy, repeater [description]
  * @return {[type]}          [description]
  */
-export var Repeat = arity(2, function Repeat(obs, trackBy, repeater) {
+export var Repeat = function Repeat(obs, trackBy, repeater) {
 
-});
+};
 
-export var On = arity(3, function On(evt_name, cbk) {
+export var On = function On(evt_name, cbk) {
 
-  return function (node) {
+  return function (component) {
     // Est-ce qu'on peut se unsubscribe ?
-    node.addEventListener(evt_name, cbk);
+    component.$node.addEventListener(evt_name, cbk);
     return node;
+  };
+
+};
+
+export class Middleware {
+
+  $component = null;
+
+  setComponent(cmp) {
+    this.$component = cmp;
   }
 
-});
+}
+
+export class Bind extends Middleware {
+
+}
+
+// export function Bind(observable, opts) {
+//
+//   return function (component) {
+//     // FIXME specify a bind interface.
+//     if (component.bind) {
+//
+//     } else {
+//       // We're calling bind on a classic HTML node.
+//       let node = component.$node;
+//
+//       if (node.tagName === 'input') {
+//
+//       } else if (node.tagName === 'textarea') {
+//
+//       }
+//     }
+//   };
+//
+// };
