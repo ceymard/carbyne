@@ -39,6 +39,11 @@ class BindMiddleware extends Middleware {
       switch (type) {
         case 'color':
         case 'range':
+        case 'date':
+        case 'datetime':
+        case 'week':
+        case 'month':
+        case 'datetime-local':
           observable.onchange((val) => node.value = val);
           node.addEventListener('input', cbk);
           break;
@@ -53,9 +58,12 @@ class BindMiddleware extends Middleware {
         case 'number':
         case 'text':
         case 'password':
+        case 'search':
         default:
         observable.onchange((val) => node.value = val);
         node.addEventListener('keyup', cbk);
+        node.addEventListener('input', cbk);
+        node.addEventListener('change', cbk);
       }
 
     } else if (tag === 'textarea') {
