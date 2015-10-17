@@ -187,7 +187,6 @@ export class HtmlComponent extends BaseComponent {
 
   unmount() {
     // remove from the parent DOM node if it is mounted
-    // destroy the data, observables and such.
     if (!this.node.parentNode) throw new Error('this node was not mounted');
     this.node.parentNode.removeChild(this.node);
 
@@ -205,11 +204,11 @@ export class Component extends BaseComponent {
 
   // The data spec for this component. Note that it can be overriden
   // (although rarely, usually by Repeat)
-  initial_data = {}
+  data_defaults = {}
 
   compile() {
 
-    let data = Object.assign({}, this.initial_data);
+    let data = this.data_defaults;
     this.data = new ObservableObject(data);
 
     let attrs = this.attrs;
