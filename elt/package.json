@@ -6,6 +6,5 @@
   "license": "MIT",
   "main": "./el.js",
   "dependencies": {
-    "elt": "."
   }
 }
