@@ -4,28 +4,15 @@
 
 export class Middleware {
 
-  $component = null;
-  $unloaders = [];
+  component = null;
 
   constructor(cmp) {
-    this.$component = cmp;
+    this.component = cmp;
   }
 
   view() { }
 
   link() { }
-
-  unload() {
-    for (let u of this.$unloaders) {
-      u.call(this);
-    }
-
-    this.$unloaders = [];
-  }
-
-  unmount() {
-
-  }
 
 }
 

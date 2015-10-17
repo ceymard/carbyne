@@ -30,8 +30,11 @@ class BindMiddleware extends Middleware {
     // We're calling bind on a classic HTML node.
     let observable = this.observable;
     let opts = this.opts;
-    let node = this.$component.$node;
+    let cpt = this.component;
+    let node = cpt.node;
     let tag = node.tagName.toLowerCase();
+
+    // FIXME need to check if we're in editing mode of an HTML node (usually by checking its attributes)
 
     if (tag === 'input') {
 
@@ -51,15 +54,15 @@ class BindMiddleware extends Middleware {
         case 'week':
         case 'month':
         case 'datetime-local':
-          this.$unloaders.push(observable.onchange((val) => node.value = val));
+          cpt.onunbind(observable.onchange((val) => node.value = val));
           node.addEventListener('input', cbk);
           break;
         case 'radio':
-          this.$unloaders.push(observable.onchange((val) => node.checked = node.value === val));
+          cpt.onunbind(observable.onchange((val) => node.checked = node.value === val));
           node.addEventListener('change', cbk);
           break;
         case 'checkbox':
-          this.$unloaders.push(observable.onchange((val) => val ? node.checked = true : node.checked = false));
+          cpt.onunbind(observable.onchange((val) => val ? node.checked = true : node.checked = false));
           node.addEventListener('change', () => observable.set(node.checked));
           break;
         case 'number':
@@ -67,7 +70,7 @@ class BindMiddleware extends Middleware {
         case 'password':
         case 'search':
         default:
-        this.$unloaders.push(observable.onchange((val) => node.value = val));
+        cpt.onunbind(observable.onchange((val) => node.value = val));
         node.addEventListener('keyup', cbk);
         node.addEventListener('input', cbk);
         node.addEventListener('change', cbk);

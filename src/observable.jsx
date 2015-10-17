@@ -6,11 +6,8 @@ export class Observable {
   constructor(value) {
     this._listeners = [];
     this._destroyed = false;
-    if (value !== undefined) this.set(value);
-  }
-
-  reset() {
-    delete this._value;
+    assert(arguments.length > 0); // an observable *must* have a value
+    this.set(value);
   }
 
   /**
@@ -32,7 +29,7 @@ export class Observable {
     if (this._listeners.length === 0) return;
 
     for (let l of this._listeners) {
-        l(value);
+      l(value);
     }
 
   }

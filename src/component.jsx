@@ -1,14 +1,203 @@
 
 import {o, Observable, ObservableObject} from './observable';
+import {Event} from './events';
 
-export class Component {
+export class BaseComponent {
 
-  $node = null;
-  $parentNode = null;
-  $parentComponent = null;
-  $middleware = [];
-  $unloaders = [];
-  $children = [];
+  _parent = null;
+  node = null;
+  children_components = [];
+  middleware = [];
+
+  onunbind = Event();
+  onunmount = Event();
+
+  constructor(attrs = {}, children = []) {
+    attrs = attrs || {};
+
+    // Handle middleware.
+    if (attrs.$$) {
+        this.middleware = (attrs.$$ instanceof Array ? attrs.$$ : [attrs.$$])
+          .map((mc) => mc(this)).filter((e) => e != null);
+        delete attrs.$$;
+    }
+
+    this.attrs = attrs;
+    this.children = children;
+
+  }
+
+  /**
+   * The goal of compile is to set the node of the element.
+   */
+  compile() {
+    // By the point link is called, we should have a this.node available.
+    this.link();
+  }
+
+  link() {
+    // This is typically when middlewares and the component should comunicate.
+    for (let m of this.middleware) {
+      m.link();
+    }
+
+  }
+
+  unbind() {
+    this.onunbind.emit(this);
+    this.onunbind.removeListeners();
+  }
+
+  mount(domnode) {
+    domnode.appendChild(this.node);
+  }
+
+  unmount() {
+    this.unbind();
+    this.onunmount.emit(this);
+    this.onunmount.removeListeners();
+    if (this.parent) this.parent.removeChild(this);
+    this.node = null;
+  }
+
+  appendComponent(c) {
+    if (!c) return;
+    c.parent = this;
+    // This will generally be called only once.
+    this.children_components.push(c);
+  }
+
+  /**
+   *
+   * This method is bound to
+   * @param  {String|Number|Boolean|Node|Component} child
+   *         The child we want to add to the current component.
+   */
+  append(child) {
+    // content is a Node.
+    let node = this.node;
+
+    if (Array.isArray(child)) {
+
+      for (let c of child) {
+        this.append(c);
+      }
+
+    } else if (child instanceof Node) {
+
+      // A DOM Node is simply appended to node.
+      node.appendChild(child);
+
+    } else if (child instanceof BaseComponent) {
+
+      this.appendComponent(child);
+
+    } else {
+      // If the node is nothing mountable, then we shall try to render it
+      // on a text node.
+
+      let txt = document.createTextNode('');
+
+      let set_value = (val) => {
+        if (val === undefined || val === null) val = '';
+        else if (typeof val === 'object') val = JSON.stringify(val);
+        txt.textContent = val.toString();
+      }
+
+      // We use o.onchange to handle both observable and regular values.
+      if (child instanceof Observable)
+        this.onunbind(child.onchange(set_value));
+      else
+        set_value(child);
+
+      node.appendChild(txt);
+    }
+  }
+
+  removeChild(child) {
+    let idx = this.children.indexOf(child);
+    if (idx > -1) {
+      this.children.splice(idx, 1);
+    }
+  }
+
+  get parent() { return this._parent; }
+  set parent(p) {
+    assert(!this._parent, 'a component can only have one parent');
+
+    this._parent = p;
+    this._parent.onunbind(this.unbind.bind(this));
+    this._parent.onunmount(this.unmount.bind(this));
+  }
+
+}
+
+
+/**
+ *
+ */
+export class HtmlComponent extends BaseComponent {
+
+  constructor(elt, attrs = {}, children = []) {
+
+    assert('string' === typeof elt);
+
+    super(attrs, children);
+    this.elt = elt;
+
+  }
+
+  toString() {
+    return `<${this.elt}>`;
+  }
+
+  /**
+   * Create the html node.
+   */
+  compile() {
+
+    let e = document.createElement(this.elt);
+
+    for (let attribute_name in this.attrs) {
+      let att = this.attrs[attribute_name];
+      this.onunbind(o.onchange(att, (val) => {
+        if (typeof val === 'object')
+          e.setAttribute(attribute_name, JSON.stringify(val));
+        else
+          e.setAttribute(attribute_name, val);
+      }));
+    }
+
+    this.node = e;
+
+    for (let c of this.children) {
+      this.append(c);
+    }
+
+    super();
+
+  }
+
+  appendComponent(c) {
+    super(c);
+    // The HTML Component possesses a real node, so it will append the node of
+    // its new child component.
+    this.node.appendChild(c.node);
+  }
+
+  unmount() {
+    // remove from the parent DOM node if it is mounted
+    // destroy the data, observables and such.
+    if (!this.node.parentNode) throw new Error('this node was not mounted');
+    this.node.parentNode.removeChild(this.node);
+
+    super();
+  }
+
+}
+
+
+export class Component extends BaseComponent {
 
   // List of properties set in the attributes that will be pulled into
   // data as .props
@@ -18,24 +207,9 @@ export class Component {
   // (although rarely, usually by Repeat)
   initial_data = {}
 
-  // Should the view be built whenever a component is instanciated ?
-  constructor(attrs = {}, children = []) {
-    attrs = attrs || {};
+  compile() {
 
-    // Handle middleware.
-    if (attrs.$$) {
-        this.$middleware = (attrs.$$ instanceof Array ? attrs.$$ : [attrs.$$]).map((mc) => mc(this)).filter((e) => e != null);
-        delete attrs.$$;
-    }
-
-    this.attrs = attrs;
-    this.children = children;
-
-  }
-
-  compile(additional_data = {}) {
-
-    let data = Object.assign({}, this.initial_data, additional_data);
+    let data = Object.assign({}, this.initial_data);
     this.data = new ObservableObject(data);
 
     let attrs = this.attrs;
@@ -46,190 +220,30 @@ export class Component {
       }
     }
 
-    let v = null;
-    v = this.view(this.data, this.children);
-
-    this.$view = v;
-
-    // Special case, we can't append child here since basically we're wrapping for other components.
-    this.$view.setParentComponent(this);
-    this.$children.push(this.$view);
-    this.$node = this.$view.$node;
+    this.appendComponent(this.view(this.data, this.children));
 
     this.link();
   }
 
   view() {
+    // A component may not have a view, as it just may be talking to a parent
+    // component.
     return null;
-  }
-
-  link() {
-    // This is typically when middlewares and the component should comunicate.
-    for (let m of this.$middleware) {
-      m.link();
-    }
-
-  }
-
-  setParentComponent(component) {
-    this.$parentComponent = component;
-  }
-
-  getParentComponent(cls) {
-    let p = this.$parentComponent;
-    if (!p) return null;
-
-    if (p instanceof cls) return p;
-    return p.getParentComponent(cls);
-  }
-
-  /**
-   *
-   * This method is bound to
-   * @param  {String|Number|Boolean|Node|Component} child
-   *         The child we want to add to the current component.
-   */
-  appendChild(child) {
-    // content is a Node.
-    let $node = this.$node;
-
-    if (Array.isArray(child)) {
-
-      for (let c of child) {
-        this.appendChild(c);
-      }
-
-    } else if (child instanceof Node) {
-
-      // A DOM Node is simply appended to $node.
-      $node.appendChild(child);
-
-    } else if (child instanceof Component) {
-
-      child.setParentComponent(this);
-      this.$children.push(child);
-      // Append its html node.
-      $node.appendChild(child.$node);
-
-    } else {
-      // If the node is nothing mountable, then we shall try to render it
-      // on a text node.
-
-      let txt = document.createTextNode('');
-
-      // We use o.onchange to handle both observable and regular values.
-      this.$unloaders.push(o.onchange(child, (val) => {
-        if (val === undefined || val === null) val = '';
-        else if (typeof val === 'object') val = JSON.stringify(val);
-        txt.textContent = val.toString();
-      }));
-
-      $node.appendChild(txt);
-    }
-  }
-
-  removeChild(child) {
-    let idx = this.$children.indexOf(child);
-    if (idx > -1) {
-      this.$children.splice(idx, 1);
-    }
-  }
-
-  unload() {
-
-    for (let u of this.$unloaders) {
-      u.call(this);
-    }
-
-    for (let m of this.$middleware) {
-      m.unload();
-    }
-
-    for (let c of this.$children) {
-      c.unload();
-    }
-
-    this.$unloaders = [];
-  }
-
-  unmount() {
-
-    for (let c of this.$children) {
-      c.unmount();
-    }
-
-    this.unload();
-
-    // remove the component from its parent.
-    if (this.$parentComponent) this.$parentComponent.removeChild(this);
-    this.$node = null;
-  }
-
-  mount(domnode) {
-    domnode.appendChild(this.$node);
   }
 
   toString() {
     return this.constructor.name;
   }
 
-}
-
-
-/**
- *
- */
-export class HtmlComponent extends Component {
-  constructor(elt, attrs = {}, children) {
-    super(attrs, children);
-
-    assert('string' === typeof elt);
-
-    this.elt = elt;
-  }
-
-  toString() {
-    return `<${this.elt}>`;
-  }
-
-  /**
-   * Create the html node.
-   */
-  compile(data, children) {
-
-    let e = document.createElement(this.elt);
-
-    for (let attribute_name in this.attrs) {
-      let att = this.attrs[attribute_name];
-      this.$unloaders.push(o.onchange(att, (val) => {
-        if (typeof val === 'object')
-          e.setAttribute(attribute_name, JSON.stringify(val));
-        else
-          e.setAttribute(attribute_name, val);
-      }));
-    }
-
-    this.$node = e;
-
-    for (let c of this.children) {
-      this.appendChild(c);
-    }
-
-    this.link();
-
-  }
-
-  unmount() {
-    // remove from the parent DOM node if it is mounted
-    // destroy the data, observables and such.
-    if (!this.$node.parentNode) throw new Error('this node was not mounted');
-    this.$node.parentNode.removeChild(this.$node);
-    this.$node = null;
-
-    super();
+  appendComponent(c) {
+    super(c);
+    // A component doesn't really possess a node, so it must 'spoof' its child
+    // node as being its own.
+    this.node = c.node;
   }
 
 }
+
 
 /**
  *
@@ -244,7 +258,7 @@ export class HtmlComponent extends Component {
  * @param  {Component|Node|Any} ...children
  *         List of children to append to this component.
  * @return {Component}
- *         The resulting instanciated component, with a $node property
+ *         The resulting instanciated component, with a node property
  *         ready to be inserted into the DOM.
  */
 export function elt(elt, attrs, ...children) {
@@ -273,6 +287,6 @@ export function elt(elt, attrs, ...children) {
   //   elt.appendChild(c);
   // }
 
-  // By this point, elt.$node is ready for insertion into the DOM.
+  // By this point, elt.node is ready for insertion into the DOM.
   return elt;
 }
