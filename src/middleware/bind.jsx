@@ -23,9 +23,11 @@ class BindMiddleware extends Middleware {
     this.observable = observable;
     this.opts = opts;
 
+    component.onbind(this.bind.bind(this));
+
   }
 
-  link() {
+  bind() {
 
     // We're calling bind on a classic HTML node.
     let observable = this.observable;

@@ -4,22 +4,15 @@ import {Middleware} from '../middleware';
 function Click (cbk) {
 
     return function (component) {
-      return new ClickMiddleware(component, cbk);
+
+      component.onbind((cpt) => {
+        // FIXME should do more processing.
+        // also should set up touch events.
+        cpt.node.addEventListener('click', cbk);
+      });
+
+      return null; // there will be no controller for this middleware.
     }
-
-}
-
-class ClickMiddleware extends Middleware {
-
-  constructor(component, cbk) {
-    super(component);
-    this.cbk = cbk;
-  }
-
-  link() {
-    // No need to unregister this.
-    this.component.node.addEventListener('click', this.cbk);
-  }
 
 }
 
