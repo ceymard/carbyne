@@ -208,11 +208,12 @@ export class Component extends BaseComponent {
 
   compile() {
 
-    let data = this.data_defaults;
-    this.data = new ObservableObject(data);
+    this.data = new ObservableObject(this.data_defaults);
 
     let attrs = this.attrs;
 
+    // FIXME class, id, tabindex and style should be forwarded to the next component, until
+    // it reaches an HTML component where they can at last be applied.
     for (let p of this.props) {
       if (p in attrs) {
         this.data[p] = attrs[p];

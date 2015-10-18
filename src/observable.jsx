@@ -6,6 +6,8 @@ export class Observable {
   constructor(value) {
     this._listeners = [];
     this._destroyed = false;
+    this._waiting_promise = null;
+
     assert(arguments.length > 0); // an observable *must* have a value
     this.set(value);
   }
@@ -20,6 +22,14 @@ export class Observable {
   set(value) {
     // FIXME need to check if the value is a promise or an observable.
 
+    if (value instanceof Observable) value = value.get();
+
+    if (value && value.then) {
+      // This is a promise, so we're going to bind the set on its then.
+      value.then((val) => this.set(val));
+      return this;
+    }
+
     // No need to change.
     if (this._value === value) return;
 
@@ -32,6 +42,7 @@ export class Observable {
       l(value);
     }
 
+    return this;
   }
 
   onchange(fn) {
@@ -111,7 +122,7 @@ export class ObservableObject {
   }
 
   define(name, value) {
-    let o = new Observable(value);
+    let o = value instanceof Observable ? value : new Observable(value);
     Object.defineProperty(this, name, {
       enumerable: true,
       set: (value) => o.set(value),
@@ -123,17 +134,23 @@ export class ObservableObject {
    * Bulk update of a datascope.
    */
   set(o) {
-
     for (let name in o) {
       if (name in this)
         this.define(name, o[name])
       else
         this[name] = o[name];
     }
-
   }
+
+  get(o) {
+    // rebuild this object and return it.
+  }
+
 }
 
+export function oo(obj) {
+  return new ObservableObject(obj);
+}
 
 export function o(...args) {
   let l = args.length;
