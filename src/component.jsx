@@ -229,10 +229,25 @@ export class Component extends BaseComponent {
     if (child) {
       // Since the Component is so dependant on the child component, then we unbind or unmount it
       // if it is unbound.
-      // child.once('unbind', ::this.unbind);
-      // child.once('unmount', ::this.unmount);
-      this.once('unbind', ::child.unbind);
-      this.once('unmount', ::child.unmount);
+      // The convoluted events below are so we avoid infinite call stacks when unbinding one or the other.
+      let child_unbind_unreg = child.once('unbind', () => {
+        this_unbind_unreg();
+        this.unbind();
+      });
+      let child_unmount_unreg = child.once('unmount', () => {
+        this_unmount_unreg();
+        this.unmount();
+      });
+
+      let this_unbind_unreg = this.on('unbind', () => {
+        child_unbind_unreg();
+        child.unbind();
+      });
+      let this_unmount_unreg = this.on('unmount', () => {
+        child_unmount_unreg();
+        child.unmount();
+      });
+
       this.children = null;
       // if (this.child) this.child.compile(); // Need to create everything in the children, since they're about to be mounted as well.
     }
