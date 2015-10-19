@@ -1,0 +1,24 @@
+
+.eltm-button
+  display inline-block
+
+  text-align center
+
+  // Button text is always uppercase
+  text-transform uppercase
+
+  // Should probably have a mixin for that
+  // as it should be some global configuration option.
+  border-radius 3px
+
+  padding 0 2rem
+
+  // This is to prevent text selection inside the button.
+  user-select(none)
+
+.eltm-button.raised
+  // A style when we have raised buttons.
+
+.fab
+  // Rounded button.
+  border-radius 50%

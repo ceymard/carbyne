@@ -272,8 +272,8 @@ export class Component extends BaseComponent {
   }
 
   unmount() {
-    this.child.unmount();
     super();
+    this.child.unmount();
   }
 }
 
@@ -317,15 +317,21 @@ export class Repeat extends BaseComponent {
     let view = this.attrs.view;
     let len = arr.length;
     let trackby = this.attrs['track-by'];
+    let watched = [];
+
+    for (let e of this.watched_children) {
+      // FIXME track-by.
+      e.unmount();
+    }
 
     // Remove all elements.
     // NOTE should add a track-by 'round here.
-    while (iter !== end) {
-      // FIXME should unmount children !!!!
-      let next = iter.nextSibling;
-      parent.removeChild(iter);
-      iter = next;
-    }
+    // while (iter !== end) {
+    //   // FIXME should unmount children !!!!
+    //   let next = iter.nextSibling;
+    //   parent.removeChild(iter);
+    //   iter = next;
+    // }
 
     for (let i = 0; i < len; i++) {
       let e = view({
@@ -339,8 +345,11 @@ export class Repeat extends BaseComponent {
       // Whatever happens, the view *must* give us some HTML components.
       assert(e instanceof BaseComponent);
 
+      watched.push(e);
       e.mount(parent, end);
     }
+
+    this.watched_children= watched;
 
   }
 

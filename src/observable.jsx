@@ -66,6 +66,25 @@ export class Observable {
     this._listeners = [];
   }
 
+  /**
+   * Optionally two-way transformer.
+   * @param  {function} fnset The function that transforms the value.
+   * @param  {function} fnget The function that gets the value back into the current observable.
+   * @return {[type]}       [description]
+   */
+  transform(fnset, fnget) {
+    let o = new Observable(fnset(this._value));
+
+    let unset = this.onchange((val) => o.set(fn(val)));
+    let unset_get = null;
+    if (fnget) {
+      unset_get = o.onchange((val) => this.set(fnget(val)));
+    }
+
+    // Unset both of them.
+    return () => { unset(); unset_get && unset_get(); };
+  }
+
 }
 
 
