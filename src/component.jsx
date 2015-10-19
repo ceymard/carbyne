@@ -9,7 +9,7 @@
  *
  */
 import {o, Observable, ObservableObject} from './observable';
-import {Event} from './events';
+import {Eventable} from './events';
 
 function forceString(val) {
   if (val === undefined || val === null) val = '';
@@ -17,23 +17,14 @@ function forceString(val) {
   return val.toString();
 }
 
-export class BaseComponent {
+export class BaseComponent extends Eventable {
 
   _parent = null;
   node = null;
   middleware = [];
 
-  // Called whenever the DOM has finished being created and is ready
-  // to have event listeners set up, for instance.
-  onbind = Event();
-  onunbind = Event();
-
-  // Called whenever a component was mounted to another (or generally to
-  // the DOM).
-  onmount = Event();
-  onunmount = Event();
-
   constructor(attrs = {}, children = []) {
+    super();
     attrs = attrs || {};
 
     // Handle middleware.
@@ -55,24 +46,21 @@ export class BaseComponent {
   }
 
   unbind() {
-    this.onunbind.emit(this);
-    this.onunbind.removeListeners();
+    this.trigger('unbind');
+    this.allOff('unbind');
   }
 
   unmount() {
     this.unbind();
-    this.onunmount.emit(this);
-    this.onunmount.removeListeners();
+    this.trigger('unmount');
+    this.allOff();
     this.node = null;
   }
 
   get parent() { return this._parent; }
   set parent(p) {
     assert(!this._parent, 'a component can only have one parent');
-
     this._parent = p;
-    this._parent.onunbind(this.unbind.bind(this));
-    this._parent.onunmount(this.unmount.bind(this));
   }
 
 }
@@ -131,13 +119,14 @@ export class HtmlComponent extends BaseComponent {
       this.append(c);
     }
 
-    this.onbind.emit(this);
+    this.trigger('bind');
 
   }
 
   mount(parent, before) {
     this.compile();
     parent.insertBefore(this.node, before);
+    this.trigger('mount');
   }
 
   unmount() {
@@ -173,7 +162,9 @@ export class HtmlComponent extends BaseComponent {
 
       child.mount(this.node, null);
       // if (child.node) node.appendChild(child.node);
-      child.onunmount(this.removeChild.bind(this, child));
+      child.once('unmount', ::this.removeChild);
+      this.once('unmount', ::child.unmount);
+      this.once('unbind', ::child.unbind);
 
     } else {
       // If the node is nothing mountable, then we shall try to render it
@@ -183,7 +174,7 @@ export class HtmlComponent extends BaseComponent {
 
       // We use o.onchange to handle both observable and regular values.
       if (child instanceof Observable)
-        this.onunbind(child.onchange((val) => { txt.textContent = forceString(val); }));
+        this.once('unbind', child.onchange((val) => { txt.textContent = forceString(val); }));
       else
         txt.textContent = forceString(child);
 
@@ -232,21 +223,26 @@ export class Component extends BaseComponent {
       }
     }
 
-    this.child = this.view(this.data, this.children);
+    // children are forwarded to the next node
+    let child = this.child = this.view(this.data, this.children);
 
-    if (this.child) {
-      this.child.onunbind(this.unbind.bind(this));
-      this.child.onunmount(this.unmount.bind(this));
+    if (child) {
+      // Since the Component is so dependant on the child component, then we unbind or unmount it
+      // if it is unbound.
+      // child.once('unbind', ::this.unbind);
+      // child.once('unmount', ::this.unmount);
+      this.once('unbind', ::child.unbind);
+      this.once('unmount', ::child.unmount);
       this.children = null;
       // if (this.child) this.child.compile(); // Need to create everything in the children, since they're about to be mounted as well.
     }
 
-    this.onbind.emit(this);
+    this.trigger('bind');
 
   }
 
   mount(node, before) {
-    this.compile();
+    if (!this.node) this.compile();
 
     if (this.child) {
       this.child.mount(node, before);
@@ -258,7 +254,7 @@ export class Component extends BaseComponent {
       this.node.setAttribute('elt', this.constructor.name + (cpts ? ', ' + cpts : ''));
     }
 
-    this.onmount.emit(this);
+    this.trigger('mount');
   }
 
   view() {
@@ -271,10 +267,6 @@ export class Component extends BaseComponent {
     return this.constructor.name;
   }
 
-  unmount() {
-    super();
-    this.child.unmount();
-  }
 }
 
 
@@ -324,15 +316,6 @@ export class Repeat extends BaseComponent {
       e.unmount();
     }
 
-    // Remove all elements.
-    // NOTE should add a track-by 'round here.
-    // while (iter !== end) {
-    //   // FIXME should unmount children !!!!
-    //   let next = iter.nextSibling;
-    //   parent.removeChild(iter);
-    //   iter = next;
-    // }
-
     for (let i = 0; i < len; i++) {
       let e = view({
           $index0: i,
@@ -358,9 +341,8 @@ export class Repeat extends BaseComponent {
     parent.insertBefore(this.node_start, before || null);
     parent.insertBefore(this.node_end, before || null);
     // Generate on array changes.
-    o.onchange(this.attrs.data, this.redraw.bind(this));
-
-    // super(parent, before);
+    this.on('unbind', o.onchange(this.attrs.data, ::this.redraw));
+    this.trigger('mount');
   }
 
 }

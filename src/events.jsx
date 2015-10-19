@@ -2,26 +2,42 @@
  * Very lightweight event.
  */
 
-export function Event() {
-  let listeners = [];
+export class Eventable {
 
-  function E(fn) {
-    listeners.push(fn);
-    return function unregister() {
-      let idx = listeners.indexOf(fn);
-      if (idx > -1) listeners.splice(idx, 1);
-    }
+  constructor() {
+    this._listeners = {};
   }
 
-  E.emit = function emit() {
-    for (let l of listeners)
-      l.apply(null, arguments);
-  };
+  on(name, fn) {
+    let lst = this._listeners[name];
+    if (!(name in this._listeners))
+      lst = this._listeners[name] = [];
+    lst.push(fn);
+    return this.off.bind(this, name, fn);
+  }
 
-  E.removeListeners = function removeListeners() {
-    // this is to avoid memory leaks.
-    listeners = [];
-  };
+  allOff(name) {
+    if (!name) this._listeners = {};
+    else  this._listeners[name] = [];
+  }
 
-  return E;
+  off(name, fn) {
+    let lst = this._listeners[name];
+    if (!lst) return;
+    let idx = lst.indexOf(fn);
+    if (idx > -1) lst.splice(idx, 1);
+  }
+
+  once(name, fn) {
+    return this.on(name, function () {
+      fn.apply(this, arguments);
+      this.off(name, fn);
+    });
+  }
+
+  trigger(name, ...args) {
+    for (let l of (this._listeners[name]||[]))
+      l.apply(this, args);
+  }
+
 }

@@ -23,7 +23,7 @@ class BindMiddleware extends Middleware {
     this.observable = observable;
     this.opts = opts;
 
-    component.onbind(this.bind.bind(this));
+    component.once('mount', ::this.bind);
 
   }
 
@@ -56,15 +56,18 @@ class BindMiddleware extends Middleware {
         case 'week':
         case 'month':
         case 'datetime-local':
-          cpt.onunbind(observable.onchange((val) => node.value = val));
+          // FIXME NOT UNREGISTERING.
+          cpt.on('unbind', observable.onchange((val) => node.value = val));
           node.addEventListener('input', cbk);
           break;
         case 'radio':
-          cpt.onunbind(observable.onchange((val) => node.checked = node.value === val));
+          cpt.on('unbind', observable.onchange((val) => {
+            node.checked = node.value === val
+          }));
           node.addEventListener('change', cbk);
           break;
         case 'checkbox':
-          cpt.onunbind(observable.onchange((val) => val ? node.checked = true : node.checked = false));
+          cpt.on('unbind', observable.onchange((val) => val ? node.checked = true : node.checked = false));
           node.addEventListener('change', () => observable.set(node.checked));
           break;
         case 'number':
@@ -72,7 +75,7 @@ class BindMiddleware extends Middleware {
         case 'password':
         case 'search':
         default:
-        cpt.onunbind(observable.onchange((val) => node.value = val));
+        cpt.on('unbind', observable.onchange((val) => node.value = val));
         node.addEventListener('keyup', cbk);
         node.addEventListener('input', cbk);
         node.addEventListener('change', cbk);
