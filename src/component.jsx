@@ -49,9 +49,9 @@ export class BaseComponent {
 
   }
 
-  mount(domnode) {
+  mount(domnode, before) {
+    // by default, we do nothing with the DOM.
     this.compile();
-    domnode.appendChild(this.node);
   }
 
   unbind() {
@@ -135,6 +135,11 @@ export class HtmlComponent extends BaseComponent {
 
   }
 
+  mount(parent, before) {
+    this.compile();
+    parent.insertBefore(this.node, before);
+  }
+
   unmount() {
     // remove from the parent DOM node if it is mounted
     if (!this.node.parentNode) throw new Error('this node was not mounted');
@@ -166,8 +171,8 @@ export class HtmlComponent extends BaseComponent {
 
     } else if (child instanceof BaseComponent) {
 
-      child.compile(); // Components need to be compiled before being appended.
-      if (child.node) node.appendChild(child.node);
+      child.mount(this.node, null);
+      // if (child.node) node.appendChild(child.node);
       child.onunmount(this.removeChild.bind(this, child));
 
     } else {
@@ -228,21 +233,32 @@ export class Component extends BaseComponent {
     }
 
     this.child = this.view(this.data, this.children);
-    this.child.onunbind(this.unbind.bind(this));
-    this.child.onunmount(this.unmount.bind(this));
-    this.children = null;
 
-    if (this.child) this.child.compile(); // Need to create everything in the children, since they're about to be mounted as well.
-
-    this.node = this.child.node;
-
-    // We leave a comment to identify the controller in the DOM for debugging.
-    // NOTE maybe should guard this statement inside some debug instruction.
-    let cpts = this.node.getAttribute('elt');
-    this.node.setAttribute('elt', this.constructor.name + (cpts ? ', ' + cpts : ''));
+    if (this.child) {
+      this.child.onunbind(this.unbind.bind(this));
+      this.child.onunmount(this.unmount.bind(this));
+      this.children = null;
+      // if (this.child) this.child.compile(); // Need to create everything in the children, since they're about to be mounted as well.
+    }
 
     this.onbind.emit(this);
 
+  }
+
+  mount(node, before) {
+    this.compile();
+
+    if (this.child) {
+      this.child.mount(node, before);
+      this.node = this.child.node;
+
+      // We leave a comment to identify the controller in the DOM for debugging.
+      // NOTE maybe should guard this statement inside some debug instruction.
+      let cpts = this.node.getAttribute('elt');
+      this.node.setAttribute('elt', this.constructor.name + (cpts ? ', ' + cpts : ''));
+    }
+
+    this.onmount.emit(this);
   }
 
   view() {
@@ -257,8 +273,87 @@ export class Component extends BaseComponent {
 
   unmount() {
     this.child.unmount();
-    super(unmount);
+    super();
   }
+}
+
+
+/**
+ * 	A repeater.
+ *
+ * 	By default, it will simply compile the provided views with custom data.
+ * 	If the array changes and is a simple observable, then all previously
+ * 	created elements are destroyed and are recreated on the fly.
+ *
+ * 	If a track-by was specified, then previously created elements are kept
+ * 	and their data just updated with the array value, if it was observable.
+ * 	Otherwise they're just kept but basically nothing changes.
+ *
+ * 	If the provided data is an object, then it automatically has a track-by.
+ *
+ * 	It has various strategies :
+ * 		- track-by
+ */
+export class Repeat extends BaseComponent {
+
+  compile() {
+
+    if (this.children) {
+      // maybe throw an error, or append their result before repeating anything ?
+      // NOTE should probably throw, as it's not its intended use.
+    }
+
+    this.watched_children = [];
+
+    this.node_start = document.createComment('Repeat');
+    this.node_end = document.createComment('/Repeat');
+  }
+
+  redraw(arr) {
+
+    let parent = this.node_start.parentNode;
+    let iter = this.node_start.nextSibling;
+    let end = this.node_end;
+    let view = this.attrs.view;
+    let len = arr.length;
+    let trackby = this.attrs['track-by'];
+
+    // Remove all elements.
+    // NOTE should add a track-by 'round here.
+    while (iter !== end) {
+      // FIXME should unmount children !!!!
+      let next = iter.nextSibling;
+      parent.removeChild(iter);
+      iter = next;
+    }
+
+    for (let i = 0; i < len; i++) {
+      let e = view({
+          $index0: i,
+          $index: i + 1,
+          $first: i === 0,
+          $last: i === len - 1,
+          $value: arr[i]
+      });
+
+      // Whatever happens, the view *must* give us some HTML components.
+      assert(e instanceof BaseComponent);
+
+      e.mount(parent, end);
+    }
+
+  }
+
+  mount(parent, before) {
+    this.compile();
+    parent.insertBefore(this.node_start, before || null);
+    parent.insertBefore(this.node_end, before || null);
+    // Generate on array changes.
+    o.onchange(this.attrs.data, this.redraw.bind(this));
+
+    // super(parent, before);
+  }
+
 }
 
 
