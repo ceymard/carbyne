@@ -2,6 +2,8 @@
 import {forceString} from './helpers';
 import {Observable} from './observable';
 
+let ident = 0;
+
 /**
  * HtmlNode is a wrapper on nodes.
  */
@@ -24,15 +26,22 @@ export class HtmlNode {
   /////////////////////////////////////////////////////////////////
 
   on(name, fn) {
-
+    if (!(name in this.listeners)) this.listeners[name] = {};
+    fn.$$ident = ident++;
+    this.listeners[name][fn.$$ident] = fn;
   }
 
   off(name, fn) {
-
+    delete (this.listeners[name]||{})[fn.$$ident||'---'];
   }
 
   once(name, fn) {
-
+    let self = this;
+    let cbk = function () {
+      fn.apply(this, arguments);
+      self.off(name, cbk);
+    }
+    this.on(name, cbk);
   }
 
   emit(name, ...args) {
@@ -44,13 +53,16 @@ export class HtmlNode {
   }
 
   trigger(name, ...args) {
+    let listeners = this.listeners[name] || {};
 
+    for (let id in listeners)
+      listeners[id].apply(this, {type: name}, ...args);
   }
 
   observe(obs, cbk) {
     // This is to make sure that the callback is not fired anymore
     // after this component is unbound.
-    this.on('$unbind', obs.onchange(cbk));
+    this.on('unmount', obs.onchange(cbk));
   }
 
   /////////////////////////////////////////////////////////////////
@@ -129,8 +141,7 @@ export class HtmlNode {
       elt = document.createComment('!');
     }
 
-
-    for (let ctrl in this.controllers)
+    for (let ctrl of this.controllers)
       ctrl.link();
 
     // The created event will allow the decorators to do some set up on the dom
@@ -146,6 +157,7 @@ export class HtmlNode {
       this.$node.appendChild(child);
     } else if (child instanceof HtmlNode) {
       this.children.push(child);
+      child.parent = this;
       child.mount(this.$node);
     } else {
       let domnode = document.createTextNode('');
@@ -200,6 +212,7 @@ export class HtmlNode {
     for (let ctrl of this.controllers)
       ctrl.destroy();
 
+    this.trigger('unmount');
     this.$node.parentNode.removeChild(this.$node);
   }
 

@@ -39,6 +39,7 @@ export class Observable {
     if (this._listeners.length === 0) return;
 
     for (let l of this._listeners) {
+      // console.log(value);
       l(value);
     }
 

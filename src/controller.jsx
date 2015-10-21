@@ -9,6 +9,10 @@ export class Controller {
 
   }
 
+  destroy() {
+    
+  }
+
   /**
    * Called when dom was created.
    */
