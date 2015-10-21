@@ -1,16 +1,27 @@
 
+import {forceString} from './helpers';
+import {Observable} from './observable';
 
-import {Eventable} from './events';
+/**
+ * HtmlNode is a wrapper on nodes.
+ */
+export class HtmlNode {
 
-export class EmptyNode {
-
-  constructor() {
-    this.children = null;
-    this.parent = null;
+  /**
+   * @param  {String} tag      The tag name. It always will be lowercase.
+   * @param  {Object} attrs    Attributes to the node. Can include observables.
+   * @param  {[type]} children [description]
+   * @return {[type]}          [description]
+   */
+  constructor(tag = null, attrs, children = null) {
+    this.tag = tag;
+    this.attrs = attrs;
+    this.children = children;
+    this.listeners = {};
     this.controllers = [];
-
-    this.$node = null;
   }
+
+  /////////////////////////////////////////////////////////////////
 
   on(name, fn) {
 
@@ -39,8 +50,10 @@ export class EmptyNode {
   observe(obs, cbk) {
     // This is to make sure that the callback is not fired anymore
     // after this component is unbound.
-    this.on('$unbind', obs.onchanged(cbk));
+    this.on('$unbind', obs.onchange(cbk));
   }
+
+  /////////////////////////////////////////////////////////////////
 
   /**
    * Get a controller by its class name, the first one that is met.
@@ -78,59 +91,93 @@ export class EmptyNode {
 
   }
 
+  /**
+   * Add another controller to this node.
+   * @param {[type]} cn [description]
+   */
   addController(cn) {
     this.controllers.push(cn);
     cn.node = this;
   }
 
-  mount() {
-    // Does nothing. In fact, none of its children shall ever be mounted.
-  }
-
-}
-
-/**
- * HtmlNode is a wrapper on nodes.
- */
-export class HtmlNode extends EmptyNode {
-
-  /**
-   * @param  {String} tag      The tag name. It always will be lowercase.
-   * @param  {Object} attrs    Attributes to the node. Can include observables.
-   * @param  {[type]} children [description]
-   * @return {[type]}          [description]
-   */
-  constructor(tag, attrs, children) {
-    super();
-    this.tag = tag;
-    this.attrs = attrs;
-    this.children = children;
-
-    // FIXME should handle middleware.
-  }
+  /////////////////////////////////////////////////////////////////
 
   createDOM() {
-    let elt = document.createElement(this.tag);
+    let elt = null;
 
-    let attrs = this.attrs;
-    for (let name in attrs) {
-      let a = attrs[name];
-      if (a instanceof Observable) {
-        this.observe(a, (value) => elt.setAttribute(name, forceString(a)));
-      } else {
-        elt.setAttribute(name, forceString(a));
+    if (this.tag) {
+      elt = document.createElement(this.tag);
+      this.$node = elt;
+
+      let attrs = this.attrs;
+      for (let name in attrs) {
+        let a = attrs[name];
+        if (a instanceof Observable) {
+          this.observe(a, (value) => elt.setAttribute(name, forceString(a)));
+        } else {
+          elt.setAttribute(name, forceString(a));
+        }
       }
+
+      let children = this.children;
+      // We're replacing children with only the components.
+      this.children = [];
+      for (let c of children) {
+        this.append(c);
+      }
+    } else {
+      elt = document.createComment('!');
     }
 
-    let children = this.children;
-    for (let c in children) {
-      this.append(c);
-    }
 
-    this.$node = elt;
+    for (let ctrl in this.controllers)
+      ctrl.link();
+
     // The created event will allow the decorators to do some set up on the dom
     // like binding events, attributes, ...
     this.trigger('dom-created');
+  }
+
+  append(child) {
+
+    if (Array.isArray(child)) {
+      for (let c of child) this.append(c);
+    } else if (child instanceof Node) {
+      this.$node.appendChild(child);
+    } else if (child instanceof HtmlNode) {
+      this.children.push(child);
+      child.mount(this.$node);
+    } else {
+      let domnode = document.createTextNode('');
+
+      if (child instanceof Observable)
+        this.observe(child, (val) => domnode.textContent = forceString(val));
+      else
+        domnode.textContent = forceString(child);
+        this.$node.appendChild(domnode);
+    }
+
+  }
+
+  /**
+   * @param  {[type]} child [description]
+   * @return {[type]}       [description]
+   */
+  prepend(child) {
+
+  }
+
+  /**
+   * Convenience functions like jQuery
+   * @param  {[type]} node [description]
+   * @return {[type]}      [description]
+   */
+  after(node) {
+
+  }
+
+  before(node) {
+
   }
 
   /**
@@ -141,8 +188,19 @@ export class HtmlNode extends EmptyNode {
    */
   mount(parent, before = null) {
     if (!this.$node) this.createDOM();
-    parent.insertBefore(parent, before);
-    this.trigger('mounted');
+    parent.insertBefore(this.$node, before);
+    this.trigger('mount');
+  }
+
+  unmount() {
+    // Unmount is recursive and tells all children to remove themselves.
+    for (let c of this.children)
+      c.unmount();
+
+    for (let ctrl of this.controllers)
+      ctrl.destroy();
+
+    this.$node.parentNode.removeChild(this.$node);
   }
 
 }
@@ -150,9 +208,11 @@ export class HtmlNode extends EmptyNode {
 
 export function elt(elt, attrs, ...children) {
   let node = null;
+  attrs = attrs || {};
   let decorators = attrs.$$;
   if (decorators) {
     delete attrs.$$;
+    if (!Array.isArray(decorators)) decorators = [decorators];
   }
 
   if (typeof elt === 'string') {
@@ -168,6 +228,7 @@ export function elt(elt, attrs, ...children) {
   }
 
   // A decorator generally sets up events and add controllers
+  decorators = decorators || [];
   for (let d of decorators) {
     d(node);
   }

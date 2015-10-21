@@ -205,6 +205,17 @@ export function o(...args) {
   return res;
 }
 
+o.all = function all(o) {
+  if (Array.isArray(o))
+    return o.map((e) => new Observable(e));
+  else {
+    let res = {};
+    for (let name in o)
+      res[name] = new Observable(o[name]);
+    return res;
+  }
+}
+
 /**
  * Get the current value of the observable, or the value itself if the
  * provided parameter was not an observable.
