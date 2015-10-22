@@ -138,11 +138,12 @@ export class HtmlNode {
         this.append(c);
       }
     } else {
-      elt = document.createComment('!');
+      this.$node = document.createComment('!');
     }
 
-    for (let ctrl of this.controllers)
+    for (let ctrl of this.controllers) {
       ctrl.link();
+    }
 
     // The created event will allow the decorators to do some set up on the dom
     // like binding events, attributes, ...
@@ -236,7 +237,7 @@ export function elt(elt, attrs, ...children) {
     // Should assert that elt is indeed a Controller.
     // Get its view until we have a node
     let controller = new elt();
-    node = controller.view(attrs, children);
+    node = controller.view(attrs, children) || new HtmlNode(null);
     node.addController(controller);
   }
 

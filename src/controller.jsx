@@ -9,23 +9,17 @@ export class Controller {
 
   }
 
-  destroy() {
-    
-  }
+  destroy() { }
 
   /**
    * Called when dom was created.
    */
-  link() {
-
-  }
+  link() { }
 
   /**
    * Called if unmounted.
    */
-  unload() {
-
-  }
+  unload() { }
 
   set node(value) {
     if (this._node) return; // FIXME error or de-initialize ?
@@ -72,21 +66,36 @@ export class Component extends Controller {
  * 	It has various strategies :
  * 		- track-by
  */
-export class Repeat extends Controller {
+export class Repeat extends Component {
 
   view(attrs, children) {
+    // NOTE some asserts would do nicely here.
+    this.data = attrs.data;
+    this.view = attrs.view;
+    this.watched_children = [];
+
     return null; // we do not define anything.
+  }
+
+  link() {
+    let domnode = this.node.$node;
+
+    this.node.once('mount', () => {
+      this.end = document.createComment('!Repeat');
+      domnode.parentNode.insertBefore(this.end, domnode.nextSibling);
+      this.node.observe(this.data, this.redraw.bind(this));
+    });
   }
 
   redraw(arr) {
     // FIXME Outdated code !
 
-    let parent = this.node_start.parentNode;
-    let iter = this.node_start.nextSibling;
-    let end = this.node_end;
-    let view = this.attrs.view;
+    let domnode = this.node.$node;
+    let parent = domnode.parentNode;
+    let view = this.view;
     let len = arr.length;
-    let trackby = this.attrs['track-by'];
+    let trackby = this.trackBy;
+    let end = this.end;
     let watched = [];
 
     for (let e of this.watched_children) {
@@ -104,7 +113,7 @@ export class Repeat extends Controller {
       });
 
       // Whatever happens, the view *must* give us some HTML components.
-      assert(e instanceof BaseComponent);
+      // assert(e instanceof HtmlNode);
 
       watched.push(e);
       e.mount(parent, end);
@@ -120,12 +129,6 @@ export class Repeat extends Controller {
     // Generate on array changes.
     this.on('unbind', o.onchange(this.attrs.data, ::this.redraw));
     this.trigger('mount');
-  }
-
-  link() {
-    // Create the other comment node.
-    // This node is just for debug though, because we keep track of the children
-    // with our children array.
   }
 
   destroy() {
