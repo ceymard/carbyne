@@ -1,17 +1,6 @@
 
 import {Controller} from '../controller';
 
-export function Bind(obs, opts) {
-
-  if (!obs) return;
-
-  return function (node) {
-    let ctrl = new BindController(obs, opts);
-    node.addController(ctrl);
-  };
-
-}
-
 export class BindController extends Controller {
 
   constructor(obs, opts) {
