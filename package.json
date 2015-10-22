@@ -1,10 +1,10 @@
 {
-  "name": "elemental",
+  "name": "elt",
   "version": "0.0.1",
   "repository": "https://github.com/ceymard/el",
   "description": "some description",
   "license": "MIT",
-  "main": "./lib/el.js",
+  "main": "./src/el.js",
   "devDependencies": {
     "webpack": "^1.12.2"
   }

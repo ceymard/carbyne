@@ -8,5 +8,5 @@
   "disableWhenNoBabelrcFileInPath":   true,
   "suppressSourcePathMessages":       false,
   "suppressTranspileOnSaveMessages":  false,
-  "transpileOnSave":                  true
+  "transpileOnSave":                  false
 }
