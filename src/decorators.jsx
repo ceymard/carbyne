@@ -1,11 +1,11 @@
 
 import {BindController} from './controllers/bind';
 
-export function Bind(obs, opts) {
+export function bind(obs, opts) {
 
   if (!obs) return;
 
-  return function (node) {
+  return function bindDecorator(node) {
     let ctrl = new BindController(obs, opts);
     node.addController(ctrl);
   };
@@ -13,9 +13,9 @@ export function Bind(obs, opts) {
 }
 
 
-export function Click (cbk) {
+export function click(cbk) {
 
-    return function (node) {
+    return function clickDecorator(node) {
 
       node.once('dom-created', function () {
         this.$node.addEventListener('click', cbk);
