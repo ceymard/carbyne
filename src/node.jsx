@@ -125,9 +125,12 @@ export class HtmlNode {
       for (let name in attrs) {
         let a = attrs[name];
         if (a instanceof Observable) {
-          this.observe(a, (value) => elt.setAttribute(name, forceString(a)));
+          this.observe(a, (value) => {
+            if (value !== undefined) elt.setAttribute(name, forceString(value))
+            else elt.removeAttribute(name);
+          });
         } else {
-          elt.setAttribute(name, forceString(a));
+          if (a !== undefined) elt.setAttribute(name, forceString(a));
         }
       }
 

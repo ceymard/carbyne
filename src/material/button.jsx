@@ -1,16 +1,17 @@
 
-import {el, Component} from 'el/component';
-import {o} from 'el/observable';
+import {Component} from '../controller';
+import {o} from '../observable';
+import {elt} from '../node';
+
+import './button.styl';
 
 export class Button extends Component {
 
-  props = ['class', 'raised', 'disabled'];
-
-  view(data) {
+  view(attrs, children) {
     // FIXME missing ripple.
-    return <button class={o(this.props.class, (v) => `${v} el-material`)} disabled={this.props.disabled} $$={[
-        this.setContentInsertion
-      ]}></button>;
+    return <span class='eltm-button-touchable'><button class={o(attrs.class, (v) => `${v||''} eltm-button`)} disabled={attrs.disabled}>
+      {children}
+    </button></span>;
   }
 
 }

@@ -1,23 +1,56 @@
 
-.eltm-button
+.eltm-button-touchable
   display inline-block
+  vertical-align middle
+  border-sizing border-box
+  height 48px
+  line-height 48px
 
+.eltm-button
+
+  border-sizing border-box
+
+  display inline-block
+  min-width 64px
+
+  // TEXT STYLE
   text-align center
-
-  // Button text is always uppercase
   text-transform uppercase
+  font-weight 500
+  font-family 'Roboto', 'Helvetica Neue', 'Segoe UI', 'Arial', sans-serif;
+  vertical-align middle
 
   // Should probably have a mixin for that
   // as it should be some global configuration option.
-  border-radius 3px
+  border-radius 2px
+  border-style none
 
-  padding 0 2rem
+  padding 0 16px
+
+  line-height 36px
+  height 36px
+
+  cursor pointer
 
   // This is to prevent text selection inside the button.
   user-select(none)
+  outline 0
 
-.eltm-button.raised
-  // A style when we have raised buttons.
+  color #673AB7
+  background none
+
+  &:hover
+    background rgba(153, 153, 153, 0.2)
+
+  // On click
+  &:active
+    background rgba(153, 153, 153, 0.4)
+
+  &.raised
+    // FIXME will depend on theme
+    color white
+    // FIXME will be material colors
+    background-color #673AB7
 
 .fab
   // Rounded button.

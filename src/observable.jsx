@@ -8,7 +8,6 @@ export class Observable {
     this._destroyed = false;
     this._waiting_promise = null;
 
-    assert(arguments.length > 0); // an observable *must* have a value
     this.set(value);
   }
 
@@ -184,22 +183,25 @@ export function o(...args) {
     return new Observable(a);
   }
 
-  let deps = [];
-  let res = new Observable();
+  let res = new Observable(undefined);
 
   let not_resolved = 0;
+  // the already resolved variables.
+  let resolved = [];
+  // get the dependencies.
+  let dependencies = Array.prototype.slice.call(arguments, 0, arguments.length - 1);
 
   // We only get the observable objects.
-  let observables = Array.prototype.slice.call(arguments, 0, arguments.length - 2);
-  observables.forEach((o, i) => {
-    resolved = false;
-    deps.push(null);
+  dependencies.forEach((obs, i) => {
+    let _resolved = false;
+    not_resolved++;
+    resolved.push(null);
 
-    o.onchange((v) => {
-      if (!resolved) not_resolved -= 1;
-      resolved = true;
-      deps[i] = v;
-      if (not_resolved === 0) res.set(fn.apply(null, deps));
+    o.onchange(obs, (v) => {
+      if (!_resolved) not_resolved -= 1;
+      _resolved = true;
+      resolved[i] = v;
+      if (not_resolved === 0) res.set(fn.apply(null, resolved));
     });
   });
 
