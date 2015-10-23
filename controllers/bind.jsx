@@ -14,14 +14,14 @@ export class BindController extends Controller {
     let obs = this.obs;
     let opts = this.opts;
     let node = this.node;
-    let domnode = node.$node;
+    let element = node.element;
 
     let cbk = (evt) => {
-      let val = domnode.value;
+      let val = element.value;
       obs.set(val);
     }
 
-    let type = domnode.type.toLowerCase() || 'text';
+    let type = element.type.toLowerCase() || 'text';
 
     switch (type) {
       case 'color':
@@ -31,28 +31,28 @@ export class BindController extends Controller {
       case 'week':
       case 'month':
       case 'datetime-local':
-        node.observe(obs, (val) => domnode.value = val);
-        domnode.addEventListener('input', cbk);
+        node.observe(obs, (val) => element.value = val);
+        element.addEventListener('input', cbk);
         break;
       case 'radio':
         node.observe(obs, (val) => {
-          domnode.checked = domnode.value === val
+          element.checked = element.value === val
         });
-        domnode.addEventListener('change', cbk);
+        element.addEventListener('change', cbk);
         break;
       case 'checkbox':
-        node.observe(obs, (val) => domnode.checked = val == true);
-        domnode.addEventListener('change', () => obs.set(domnode.checked));
+        node.observe(obs, (val) => element.checked = val == true);
+        element.addEventListener('change', () => obs.set(element.checked));
         break;
       case 'number':
       case 'text':
       case 'password':
       case 'search':
       default:
-      node.observe(obs, (val) => domnode.value = val);
-      domnode.addEventListener('keyup', cbk);
-      domnode.addEventListener('input', cbk);
-      domnode.addEventListener('change', cbk);
+      node.observe(obs, (val) => element.value = val);
+      element.addEventListener('keyup', cbk);
+      element.addEventListener('input', cbk);
+      element.addEventListener('change', cbk);
     }
 
   }
@@ -63,7 +63,7 @@ export class BindController extends Controller {
 
   link() {
     // We're calling bind on a classic HTML node.
-    let tag = this.node.$node.tagName.toLowerCase();
+    let tag = this.node.element.tagName.toLowerCase();
 
     // FIXME need to check if we're in editing mode of an HTML node (usually by checking its attributes)
     if (tag === 'input') this.linkToInput();

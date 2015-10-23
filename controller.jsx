@@ -78,11 +78,11 @@ export class Repeat extends Component {
   }
 
   link() {
-    let domnode = this.node.$node;
+    let element = this.node.element;
 
     this.node.once('mount', () => {
       this.end = document.createComment('!Repeat');
-      domnode.parentNode.insertBefore(this.end, domnode.nextSibling);
+      element.parentNode.insertBefore(this.end, element.nextSibling);
       this.node.observe(this.data, this.redraw.bind(this));
     });
   }
@@ -90,8 +90,8 @@ export class Repeat extends Component {
   redraw(arr) {
     // FIXME Outdated code !
 
-    let domnode = this.node.$node;
-    let parent = domnode.parentNode;
+    let element = this.node.element;
+    let parent = element.parentNode;
     let view = this.view;
     let len = arr.length;
     let trackby = this.trackBy;

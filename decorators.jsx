@@ -19,7 +19,7 @@ export function click(cbk) {
     return function clickDecorator(node) {
 
       node.once('dom-created', function () {
-        this.$node.addEventListener('click', cbk);
+        this.element.addEventListener('click', cbk);
       });
 
     };
@@ -31,7 +31,7 @@ export function cls(obj) {
   return function clsDecorator(node) {
 
     node.once('dom-created', function () {
-      let clslist = this.$node.classList;
+      let clslist = this.element.classList;
 
       for (let cls in obj) {
         let obs = obj[cls];

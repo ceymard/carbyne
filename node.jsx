@@ -119,7 +119,7 @@ export class HtmlNode {
 
     if (this.tag) {
       elt = document.createElement(this.tag);
-      this.$node = elt;
+      this.element = elt;
 
       let attrs = this.attrs;
       for (let name in attrs) {
@@ -141,7 +141,7 @@ export class HtmlNode {
         this.append(c);
       }
     } else {
-      this.$node = document.createComment('!');
+      this.element = document.createComment('!');
     }
 
     for (let ctrl of this.controllers) {
@@ -158,11 +158,11 @@ export class HtmlNode {
     if (Array.isArray(child)) {
       for (let c of child) this.append(c);
     } else if (child instanceof Node) {
-      this.$node.appendChild(child);
+      this.element.appendChild(child);
     } else if (child instanceof HtmlNode) {
       this.children.push(child);
       child.parent = this;
-      child.mount(this.$node);
+      child.mount(this.element);
     } else {
       let domnode = document.createTextNode('');
 
@@ -170,7 +170,7 @@ export class HtmlNode {
         this.observe(child, (val) => domnode.textContent = forceString(val));
       else
         domnode.textContent = forceString(child);
-        this.$node.appendChild(domnode);
+        this.element.appendChild(domnode);
     }
 
   }
@@ -203,8 +203,8 @@ export class HtmlNode {
    *                       then the current node is appended to the parent.
    */
   mount(parent, before = null) {
-    if (!this.$node) this.createDOM();
-    parent.insertBefore(this.$node, before);
+    if (!this.element) this.createDOM();
+    parent.insertBefore(this.element, before);
     this.trigger('mount');
   }
 
@@ -217,7 +217,7 @@ export class HtmlNode {
       ctrl.destroy();
 
     this.trigger('unmount');
-    this.$node.parentNode.removeChild(this.$node);
+    this.element.parentNode.removeChild(this.element);
   }
 
 }
