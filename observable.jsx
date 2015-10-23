@@ -8,6 +8,7 @@ export class Observable {
     this._destroyed = false;
     this._waiting_promise = null;
 
+    this._value = undefined;
     this.set(value);
   }
 
@@ -178,8 +179,7 @@ export function o(...args) {
   // Just creating an observable.
   if (l === 1) {
     let a = args[0];
-    if (a && Object.getPrototypeOf(a) === OBJ_PROTO)
-      return new ObservableObject(a);
+    if (a instanceof Observable) return a;
     return new Observable(a);
   }
 

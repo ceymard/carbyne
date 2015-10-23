@@ -15,7 +15,7 @@ export class HtmlNode {
    * @param  {[type]} children [description]
    * @return {[type]}          [description]
    */
-  constructor(tag = null, attrs, children = null) {
+  constructor(tag = null, attrs, children = []) {
     this.tag = tag;
     this.attrs = attrs;
     this.children = children;
@@ -114,11 +114,15 @@ export class HtmlNode {
 
   /////////////////////////////////////////////////////////////////
 
+  createElement(tag) {
+    return document.createElement(tag);
+  }
+
   createDOM() {
     let elt = null;
 
     if (this.tag) {
-      elt = document.createElement(this.tag);
+      elt = this.createElement(this.tag);
       this.element = elt;
 
       let attrs = this.attrs;
@@ -241,6 +245,8 @@ export function elt(elt, attrs, ...children) {
     // Get its view until we have a node
     let controller = new elt();
     node = controller.view(attrs, children) || new HtmlNode(null);
+    // FIXME : should I forward here the classical html attributes ?
+    // class, tabindex, style, ...
     node.addController(controller);
   }
 

@@ -61,6 +61,10 @@ export class BindController extends Controller {
 
   }
 
+  linkToBind(bind) {
+
+  }
+
   link() {
     // We're calling bind on a classic HTML node.
     let tag = this.node.element.tagName.toLowerCase();

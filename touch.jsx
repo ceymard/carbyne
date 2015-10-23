@@ -1,5 +1,7 @@
 'use strict';
 
+// FIXME should override the click decorator.
+
 /**
  * Click decorator for touch devices.
  * Almost all of the code was stolen from Angular's excellent ngTouch module.
