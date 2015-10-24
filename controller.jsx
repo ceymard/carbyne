@@ -47,11 +47,8 @@ export class Component extends Controller {
     // FIXME this is actually fairly ugly.
     // Maybe I should decorate with cls() or style()
     if (attrs.class) {
-      let orig_cls = node.attrs.class || '';
-      if (orig_cls instanceof Observable || attrs.class instanceof Observable)
-        node.attrs.class = o(attrs.class, node.attrs.class||'', (c1, c2) => `${c1} ${c2}`);
-      else
-        node.attrs.class = `${orig_cls} ${attrs.class}`;
+      node.attrs.class = o(attrs.class, node.attrs.class||'', (c1, c2) => `${c1} ${c2}`);
+      console.log(node.attrs.class);
     }
 
     if (attrs.style) {

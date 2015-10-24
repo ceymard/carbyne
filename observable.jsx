@@ -115,17 +115,25 @@ export class DependentObservable extends Observable {
             resolved = true;
           }
           this.args[index] = v;
-          // If there are no missing dependencies, then just call the apply function.
-          if (this.missing === 0) this.set(this.fn.apply(null, this.args));
+          this._set();
         }));
       } else {
         this.args.push(dep);
       }
     }
 
-    if (this.missing === 0) this.set(this.fn.apply(null, this.args));
+    this._set();
 
   }
+
+  _set() {
+    if (this.missing === 0)
+      // If there are no missing dependencies, then just call the apply function.
+      Observable.prototype.set.call(this, this.fn.apply(null, this.args));
+  }
+
+  // Override set so that this Observable can't be set.
+  set() { }
 
   removeListener(fn) {
     super(fn);
@@ -150,8 +158,23 @@ export function o(...args) {
   }
 
   let fn = args[args.length - 1];
+  let deps = Array.prototype.slice.call(arguments, 0, arguments.length - 1);
+  let has_obs = false;
+
+  // See if one of the dependency has observables.
+  for (let d of deps) {
+    if (d instanceof Observable) {
+      has_obs = true;
+      break;
+    }
+  }
+
+  // If there is no observer, directly return the result of applying the function
+  // with its arguments.
+  if (!has_obs) return fn.apply(this, deps);
+
   let res = new DependentObservable(
-    Array.prototype.slice.call(arguments, 0, arguments.length - 1),
+    deps,
     fn
   );
 
