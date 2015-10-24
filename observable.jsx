@@ -4,7 +4,7 @@ let OBJ_PROTO = Object.getPrototypeOf({});
 export class Observable {
 
   constructor(value) {
-    this._listeners = [];
+    this.listeners = [];
     this._destroyed = false;
     this._waiting_promise = null;
 
@@ -36,9 +36,9 @@ export class Observable {
     this._value = value;
 
     // No need to trigger if no one is listening to us.
-    if (this._listeners.length === 0) return;
+    if (this.listeners.length === 0) return;
 
-    for (let l of this._listeners) {
+    for (let l of this.listeners) {
       // console.log(value);
       l(value);
     }
@@ -53,18 +53,20 @@ export class Observable {
 
     if (this._destroyed) return;
 
-    this._listeners.push(fn);
+    this.listeners.push(fn);
 
-    return () => {
-      let idx = this._listeners.indexOf(fn);
-      this._listeners.splice(idx, 1);
-    }
+    return this.removeListener.bind(this, fn);
+  }
+
+  removeListener(fn) {
+    let idx = this.listeners.indexOf(fn);
+    if (idx > -1) this.listeners.splice(idx, 1);
   }
 
   // This Observable will never update anyone again.
   destroy() {
     this._destroyed = true;
-    this._listeners = [];
+    this.listeners = [];
   }
 
   /**
@@ -89,84 +91,49 @@ export class Observable {
 }
 
 
-export class ArrayObservable {
+/**
+ * You can't set a DependentObservable
+ */
+export class DependentObservable extends Observable {
 
-  length = new Observable();
+  constructor(deps, fn) {
+    super(undefined); // by default the value is undefined.
+    this.fn = fn;
+    this.dependencies = [];
+    this.args = [];
+    this.missing = 0;
 
-  constructor(a) {
-    this.length = new Observable(0);
-    this.update(a);
-  }
-
-  /**
-   * Update this array with another array.
-   * Performs optimisation ?
-   * @param  {Array} arr The array with the newer values.
-   */
-  update(arr) {
-    assert(a instanceof Array);
-
-    // the array hasn't changed.
-    if (arr === this._value);
-
-    // empty the array ?
-    for (let a of arr) {
-
+    for (let dep of deps) {
+      if (dep instanceof Observable) {
+        let index = this.args.length;
+        let resolved = false;
+        this.missing++;
+        this.args.push(undefined);
+        this.dependencies.push(dep.onchange((v) => {
+          if (!resolved) {
+            this.missing--;
+            resolved = true;
+          }
+          this.args[index] = v;
+          // If there are no missing dependencies, then just call the apply function.
+          if (this.missing === 0) this.set(this.fn.apply(null, this.args));
+        }));
+      } else {
+        this.args.push(dep);
+      }
     }
 
-    // update the length.
-    this.length.set(this._value.length);
-  }
-
-  // Get observable on position i
-  // or set the object at the given position.
-  at(i, v) {
+    if (this.missing === 0) this.set(this.fn.apply(null, this.args));
 
   }
 
-  destroy() {
-    for (let i of this.items) {
-      i.destroy();
-    }
+  removeListener(fn) {
+    super(fn);
+    if (this.listeners.length === 0)
+      for (d of this.dependencies) d(); // unregister all the dependencies.
   }
-
 }
 
-export class ObservableObject {
-
-  constructor(o) {
-    for (let name of Object.getOwnPropertyNames(o)) {
-      // For now, we don't check for recursion.
-      this.define(name, o[name]);
-    }
-  }
-
-  define(name, value) {
-    let o = value instanceof Observable ? value : new Observable(value);
-    Object.defineProperty(this, name, {
-      enumerable: true,
-      set: (value) => o.set(value),
-      get: () => o
-    })
-  }
-
-  /**
-   * Bulk update of a datascope.
-   */
-  set(o) {
-    for (let name in o) {
-      if (name in this)
-        this.define(name, o[name])
-      else
-        this[name] = o[name];
-    }
-  }
-
-  get(o) {
-    // rebuild this object and return it.
-  }
-
-}
 
 export function oo(obj) {
   return new ObservableObject(obj);
@@ -174,7 +141,6 @@ export function oo(obj) {
 
 export function o(...args) {
   let l = args.length;
-  let fn = args[args.length - 1];
 
   // Just creating an observable.
   if (l === 1) {
@@ -183,27 +149,11 @@ export function o(...args) {
     return new Observable(a);
   }
 
-  let res = new Observable(undefined);
-
-  let not_resolved = 0;
-  // the already resolved variables.
-  let resolved = [];
-  // get the dependencies.
-  let dependencies = Array.prototype.slice.call(arguments, 0, arguments.length - 1);
-
-  // We only get the observable objects.
-  dependencies.forEach((obs, i) => {
-    let _resolved = false;
-    not_resolved++;
-    resolved.push(null);
-
-    o.onchange(obs, (v) => {
-      if (!_resolved) not_resolved -= 1;
-      _resolved = true;
-      resolved[i] = v;
-      if (not_resolved === 0) res.set(fn.apply(null, resolved));
-    });
-  });
+  let fn = args[args.length - 1];
+  let res = new DependentObservable(
+    Array.prototype.slice.call(arguments, 0, arguments.length - 1),
+    fn
+  );
 
   return res;
 }

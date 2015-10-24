@@ -34,7 +34,7 @@ export class ClassController extends Controller {
   }
 
   addStyles(...args) {
-    this.styles = this.styles.concat(args);
+    this.classes = this.classes.concat(args);
   }
 
 }
@@ -50,7 +50,6 @@ export function cls(obj) {
     // There is no need to have several controllers on the node, so we first try to find
     // if there is one here.
     let ctrl = node.getController(ClassController);
-    console.log(ctrl);
 
     node.once('dom-created', function () {
       let clslist = this.element.classList;
