@@ -48,7 +48,6 @@ export class Component extends Controller {
     // Maybe I should decorate with cls() or style()
     if (attrs.class) {
       node.attrs.class = o(attrs.class, node.attrs.class||'', (c1, c2) => `${c1} ${c2}`);
-      console.log(node.attrs.class);
     }
 
     if (attrs.style) {

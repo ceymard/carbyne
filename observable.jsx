@@ -73,19 +73,14 @@ export class Observable {
    * Optionally two-way transformer.
    * @param  {function} fnset The function that transforms the value.
    * @param  {function} fnget The function that gets the value back into the current observable.
-   * @return {[type]}       [description]
+   * @return {Observable}  The observable object that results.
    */
-  transform(fnset, fnget) {
-    let o = new Observable(fnset(this._value));
+  transform(fnget) {
+    return new DependentObservable([this], fnget);
+  }
 
-    let unset = this.onchange((val) => o.set(fn(val)));
-    let unset_get = null;
-    if (fnget) {
-      unset_get = o.onchange((val) => this.set(fnget(val)));
-    }
-
-    // Unset both of them.
-    return () => { unset(); unset_get && unset_get(); };
+  oneway() {
+    return new DependentObservable([this], (v) => v);
   }
 
 }
@@ -96,10 +91,10 @@ export class Observable {
  */
 export class DependentObservable extends Observable {
 
-  constructor(deps, fn) {
+  constructor(deps, fnget) {
     super(undefined); // by default the value is undefined.
-    this.fn = fn;
-    this.dependencies = [];
+    this.fnget = fnget;
+    this.unloaders = [];
     this.args = [];
     this.missing = 0;
 
@@ -109,7 +104,7 @@ export class DependentObservable extends Observable {
         let resolved = false;
         this.missing++;
         this.args.push(undefined);
-        this.dependencies.push(dep.onchange((v) => {
+        this.unloaders.push(dep.onchange((v) => {
           if (!resolved) {
             this.missing--;
             resolved = true;
@@ -128,25 +123,40 @@ export class DependentObservable extends Observable {
 
   _set() {
     if (this.missing === 0)
-      // If there are no missing dependencies, then just call the apply function.
-      Observable.prototype.set.call(this, this.fn.apply(null, this.args));
+      // If there are no missing unloaders, then just call the apply function.
+      Observable.prototype.set.call(this, this.fnget.apply(null, this.args));
   }
 
   // Override set so that this Observable can't be set.
-  set() { }
+  set(value) {
+    if (this.fnset) {
+      for (let d of this.dependencies)
+        d.set(this.fnset(value));
+    }
+  }
 
   removeListener(fn) {
     super(fn);
-    if (this.listeners.length === 0)
-      for (d of this.dependencies) d(); // unregister all the dependencies.
+    if (this.listeners.length === 0) {
+      for (d of this.unloaders) d(); // unregister all the dependencies.
+    }
   }
 }
 
 
-export function oo(obj) {
-  return new ObservableObject(obj);
-}
-
+/**
+ * This is a convenience function.
+ * There are two ways of calling it :
+ *
+ * 	- With a single argument, it will return an observable, whether the argument
+ * 		was observable or not. Which is to say that in that case, we have
+ * 		o(Any|Observable) -> Observable
+ *
+ * 	- With several arguments, it expects the last one to be a computation function
+ * 		and the first ones its dependencies. If none of the dependency is Observable,
+ * 		just return the result of the computation. Otherwise return an observable
+ * 		that depends on other observables.
+ */
 export function o(...args) {
   let l = args.length;
 
@@ -181,13 +191,17 @@ export function o(...args) {
   return res;
 }
 
-o.all = function all(o) {
-  if (Array.isArray(o))
-    return o.map((e) => new Observable(e));
+
+/**
+ * Force the array or object to only contain Obervables.
+ */
+o.all = function all(arg) {
+  if (Array.isArray(arg))
+    return arg.map((e) => o(e));
   else {
     let res = {};
-    for (let name in o)
-      res[name] = new Observable(o[name]);
+    for (let name in arg)
+      res[name] = o(arg[name]);
     return res;
   }
 }
@@ -195,8 +209,6 @@ o.all = function all(o) {
 /**
  * Get the current value of the observable, or the value itself if the
  * provided parameter was not an observable.
- * @param  {[type]} v [description]
- * @return {[type]}   [description]
  */
 o.get = function get(v) {
   if (v instanceof Observable) return v.get();
@@ -207,9 +219,6 @@ o.get = function get(v) {
 /**
  * Setup an onchange event on the observable, or just call the
  * onchange value once if the provided o is not an observable.
- * @param  {[type]}   o  [description]
- * @param  {Function} fn [description]
- * @return {[type]}      [description]
  */
 o.onchange = function onchange(o, fn) {
   if (o instanceof Observable) return o.onchange(fn);
