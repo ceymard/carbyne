@@ -1,6 +1,7 @@
 
 import {BindController} from './controllers/bind';
 import {o, Observable} from './observable';
+import {Controller} from './controller';
 
 export function bind(obs, opts) {
 
@@ -26,9 +27,30 @@ export function click(cbk) {
 
 }
 
+export class ClassController extends Controller {
+
+  constructor() {
+    super(...arguments);
+  }
+
+  addStyles(...args) {
+    this.styles = this.styles.concat(args);
+  }
+
+}
+
+export class StyleController extends Controller {
+
+}
+
 export function cls(obj) {
 
   return function clsDecorator(node) {
+
+    // There is no need to have several controllers on the node, so we first try to find
+    // if there is one here.
+    let ctrl = node.getController(ClassController);
+    console.log(ctrl);
 
     node.once('dom-created', function () {
       let clslist = this.element.classList;

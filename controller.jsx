@@ -1,11 +1,12 @@
 
 import {Eventable} from './events';
+import {o} from './observable';
 
 export class Controller {
 
   constructor() {
 
-    this._node = null;
+    this.node = null;
 
   }
 
@@ -21,13 +22,9 @@ export class Controller {
    */
   unload() { }
 
-  set node(value) {
-    if (this._node) return; // FIXME error or de-initialize ?
-
-    this._node = value;
-    // FIXME Initialize the code that is to be called when this addin is affected a node.
+  setNode(node) {
+    this.node = node;
   }
-  get node() { return this._node; }
 
 }
 
@@ -37,6 +34,32 @@ export class Controller {
  * a view and as such can be used during element creation.
  */
 export class Component extends Controller {
+
+  constructor(attrs) {
+    super();
+    this.attrs = attrs;
+  }
+
+  setNode(node) {
+    super(node);
+    let attrs = this.attrs;
+
+    // FIXME this is actually fairly ugly.
+    // Maybe I should decorate with cls() or style()
+    if (attrs.class) {
+      node.attrs.class = o(attrs.class, node.attrs.class||'', (c1, c2) => `${c1} ${c2}`);
+    }
+
+    if (attrs.style) {
+      node.attrs.style = o(attrs.style, node.attrs.style||'', (c1, c2) => `${c1};${c2}`);
+    }
+
+    for (let att of ['id', 'tabindex']) {
+      if (attrs[att]) // The last one to speak wins
+        node.attrs[att] = attrs[att];
+    }
+
+  }
 
   /**
    * @param  {Object} attrs    The attributes object that was given
