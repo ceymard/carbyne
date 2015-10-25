@@ -87,7 +87,11 @@ export class Observable {
 
 
 /**
- * You can't set a DependentObservable
+ * The DependentObservable is based on other observables (and optionnaly values too).
+ * It uses a function to give its value.
+ *
+ * Whenever the last of its listeners unsubscribes, it unsubscribes from the
+ * Observables it depends upon.
  */
 export class DependentObservable extends Observable {
 
