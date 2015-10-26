@@ -169,14 +169,25 @@ export class HtmlNode {
       this.children.push(child);
       child.parent = this;
       child.mount(this.element, before);
+    } else if (child instanceof Observable) {
+      let dynamic_children = null;
+      // Create a text child anyway.
+      let domnode = document.createTextNode('');
+      this.element.insertBefore(domnode, before);
+
+      // FIXME we should be able to also observe HTMLNodes, regular nodes,
+      // and arrays of values, not just their text equivalents.
+      //
+      // NOTE we should probably use something like a VirtualNode, for which
+      // we know that its contents can completely vary ?
+      this.observe(child, (val) => {
+        domnode.textContent = forceString(val);
+      });
     } else {
       let domnode = document.createTextNode('');
+      domnode.textContent = forceString(child);
 
-      if (child instanceof Observable)
-        this.observe(child, (val) => domnode.textContent = forceString(val));
-      else
-        domnode.textContent = forceString(child);
-        this.element.insertBefore(domnode, before);
+      this.element.insertBefore(domnode, before);
     }
 
   }
@@ -225,13 +236,39 @@ export class HtmlNode {
       ctrl.destroy();
 
     this.trigger('unmount');
+    if (this.parent) {
+      this.parent.removeChild(this);
+      this.parent = null;
+    }
     this._unmonted = true;
+  }
+
+  removeChild(child) {
+    // This does not remove element from the DOM !
+    let idx = this.children.indexOf(child);
+    if (idx > -1) this.children.splice(idx, 1);
   }
 
   remove() {
     // should check if we're already unmounted.
     this.unmount();
     this.element.parentNode.removeChild(this.element);
+  }
+
+}
+
+var _virtual_count = 0;
+export class VirtualNode extends HtmlNode {
+
+  constructor() {
+    super(null, {}, []);
+  }
+
+  mount(parent, before) {
+    _virtual_count++;
+    // Virtual nodes have two comments between which they
+    this.element = document.createComment(`virtual ${_virtual_count}`);
+    parent.insertBefore(this.element, before);
   }
 
 }
