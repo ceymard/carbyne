@@ -159,16 +159,16 @@ export class HtmlNode {
     this.trigger('dom-created');
   }
 
-  append(child) {
+  append(child, before = null) {
 
     if (Array.isArray(child)) {
-      for (let c of child) this.append(c);
+      for (let c of child) this.append(c, before);
     } else if (child instanceof Node) {
-      this.element.appendChild(child);
+      this.element.insertBefore(child, before);
     } else if (child instanceof HtmlNode) {
       this.children.push(child);
       child.parent = this;
-      child.mount(this.element);
+      child.mount(this.element, before);
     } else {
       let domnode = document.createTextNode('');
 
@@ -176,7 +176,7 @@ export class HtmlNode {
         this.observe(child, (val) => domnode.textContent = forceString(val));
       else
         domnode.textContent = forceString(child);
-        this.element.appendChild(domnode);
+        this.element.insertBefore(domnode, before);
     }
 
   }
@@ -216,6 +216,8 @@ export class HtmlNode {
 
   unmount() {
     // Unmount is recursive and tells all children to remove themselves.
+    if (this._unmounted) return;
+
     for (let c of this.children)
       c.unmount();
 
@@ -223,6 +225,12 @@ export class HtmlNode {
       ctrl.destroy();
 
     this.trigger('unmount');
+    this._unmonted = true;
+  }
+
+  remove() {
+    // should check if we're already unmounted.
+    this.unmount();
     this.element.parentNode.removeChild(this.element);
   }
 

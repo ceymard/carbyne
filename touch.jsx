@@ -239,7 +239,7 @@ export function click(fn) {
             // to actually redefine it somewhere
             // element.triggerHandler('click', [event]);
             // NOTE maybe we could just call the function here ?
-            fn.call(this);
+            fn.call(this, event);
           // }
         }
 
@@ -257,10 +257,7 @@ export function click(fn) {
       // - But the browser's follow-up slow click will be "busted" before it reaches this handler.
       // Therefore it's safe to use this directive on both mobile and desktop.
       element.addEventListener('click', function(event) {
-        fn.apply(this, event);
-        // scope.$apply(function() {
-        //   clickHandler(scope, {$event: (touchend || event)});
-        // });
+        fn.call(this, event);
       });
 
       element.addEventListener('mousedown', function(event) {
