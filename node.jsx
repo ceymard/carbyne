@@ -56,7 +56,7 @@ export class HtmlNode {
     let listeners = this.listeners[name] || {};
 
     for (let id in listeners)
-      listeners[id].apply(this, {type: name}, ...args);
+      listeners[id].call(this, {type: name}, ...args);
   }
 
   observe(obs, cbk) {
@@ -83,7 +83,7 @@ export class HtmlNode {
     let res = null;
     let node = this;
 
-    let all = !opts.first || opts.all;
+    let all = opts.all;
     let recursive = opts.recursive == true;
 
     while (node) {
@@ -222,7 +222,7 @@ export class HtmlNode {
   mount(parent, before = null) {
     if (!this.element) this.createDOM();
     parent.insertBefore(this.element, before);
-    this.trigger('mount');
+    this.trigger('mount', parent, before);
   }
 
   unmount() {
