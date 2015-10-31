@@ -44,25 +44,38 @@ export class HtmlNode {
     this.on(name, cbk);
   }
 
-  emit(name, ...args) {
-
+  emit() {
+    // FIXME stop propagation ?
+    this.trigger.apply(this, arguments);
+    if (this.parent) this.parent.trigger.apply(this.parent, arguments);
   }
 
-  broadcast(name, ...args) {
-
+  broadcast() {
+    this.trigger.apply(this, arguments);
+    for (let c of this.children) {
+      c.broadcast.apply(c, arguments);
+    }
   }
 
-  trigger(name, ...args) {
-    let listeners = this.listeners[name] || {};
+  trigger(event, ...args) {
+    if (typeof event === 'string')
+      event = {type: event, target: this, propagate: true, stopPropagation() { this.propagate = false; }};
+    let listeners = this.listeners[event.type] || {};
 
     for (let id in listeners)
-      listeners[id].call(this, {type: name}, ...args);
+      listeners[id].call(this, event, ...args);
+
+    return this;
   }
 
   observe(obs, cbk) {
     // This is to make sure that the callback is not fired anymore
     // after this component is unbound.
-    this.on('unmount', obs.onchange(cbk));
+    if (obs instanceof Observable)
+      this.on('unmount', obs.onchange(cbk));
+    else
+      // Fire immediately if this is not an observable.
+      cbk();
   }
 
   /////////////////////////////////////////////////////////////////
@@ -300,7 +313,7 @@ export function elt(elt, attrs, ...children) {
   // A decorator generally sets up events and add controllers
   decorators = decorators || [];
   for (let d of decorators) {
-    d(node);
+    node = d(node) || node;
   }
 
   // At this point, we have a node that is ready to be inserted or something.

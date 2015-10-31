@@ -1,6 +1,8 @@
 'use strict';
 
-// FIXME should override the click decorator.
+// FIXME there is something happening where the active class gets
+// added the first time the elements are clicked, but never removed.
+// should investigate that.
 
 /**
  * Click decorator for touch devices.

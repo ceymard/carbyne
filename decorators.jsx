@@ -10,6 +10,7 @@ export function bind(obs, opts) {
   return function bindDecorator(node) {
     let ctrl = new BindController(obs, opts);
     node.addController(ctrl);
+    return node;
   };
 
 }
@@ -23,6 +24,7 @@ export function click(cbk) {
         this.element.addEventListener('click', cbk);
       });
 
+      return node;
     };
 
 }
@@ -68,6 +70,7 @@ export function cls(obj) {
       }
     });
 
+    return node;
   }
 
 }
