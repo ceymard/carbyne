@@ -79,6 +79,25 @@ export class Observable {
     return new DependentObservable([this], fnget);
   }
 
+  /**
+   * Gets an observable on an object's property.
+   * This is a special observable that is able to bind two ways unless
+   * asked not to.
+   * Like the DependentObservable, it will stop listening once it has
+   * no listeners anymore.
+   * It will get triggered everytime the original object is set.
+   *
+   * @param  {String} path The path in dot format.
+   * @return {DependentObservable} The resulting observable.
+   */
+  prop(path, oneway = false) {
+
+    // FIXME this is not implemented !
+    let o = new Observable(path(this._value, path));
+    return o;
+
+  }
+
   oneway() {
     return new DependentObservable([this], (v) => v);
   }
