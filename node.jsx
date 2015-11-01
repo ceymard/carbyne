@@ -302,11 +302,8 @@ export function elt(elt, attrs, ...children) {
 
   } else if (typeof elt === 'function') {
     // Should assert that elt is indeed a Controller.
-    // Get its view until we have a node
     let controller = new elt(attrs);
     node = controller.view(attrs, children) || new HtmlNode(null);
-    // FIXME : should I forward here the classical html attributes ?
-    // class, tabindex, style, ...
     node.addController(controller);
   }
 

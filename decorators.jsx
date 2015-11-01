@@ -1,6 +1,5 @@
 
 import {BindController} from './controllers/bind';
-import {o, Observable} from './observable';
 import {Controller} from './controller';
 
 export function bind(obs, opts) {
@@ -58,15 +57,10 @@ export function cls(obj) {
 
       for (let cls in obj) {
         let obs = obj[cls];
-        if (obs instanceof Observable) {
-          node.observe(obs, (val) => {
-            if (val) clslist.add(cls);
-            else clslist.remove(cls);
-          });
-        } else {
-          if (obs) clslist.add(cls);
+        node.observe(obs, (val) => {
+          if (val) clslist.add(cls);
           else clslist.remove(cls);
-        }
+        });
       }
     });
 
