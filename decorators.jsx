@@ -71,3 +71,14 @@ export function ctrl(...ctrls) {
     for (let c of ctrls) node.addController(c);
   }
 }
+
+export function transition(name = '') {
+  if (name) name = `${name}-`;
+
+  return function transitionDecorator(node) {
+    node.on('dom-created', function () {
+      node.element.classList.add(`${name}enter`);
+      requestAnimationFrame(() => node.element.classList.remove(`${name}enter`));
+    });
+  }
+}

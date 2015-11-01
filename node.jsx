@@ -242,13 +242,15 @@ export class HtmlNode {
     // Unmount is recursive and tells all children to remove themselves.
     if (this._unmounted) return;
 
+    // This should be preventable in the event.
+    this.trigger('unmount');
+
     for (let c of this.children)
       c.unmount();
 
     for (let ctrl of this.controllers)
       ctrl.destroy();
 
-    this.trigger('unmount');
     if (this.parent) {
       this.parent.removeChild(this);
       this.parent = null;
