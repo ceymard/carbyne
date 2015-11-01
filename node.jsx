@@ -290,27 +290,32 @@ export class VirtualNode extends HtmlNode {
 export function elt(elt, attrs, ...children) {
   let node = null;
   attrs = attrs || {};
+
   let decorators = attrs.$$;
+
   if (decorators) {
     delete attrs.$$;
     if (!Array.isArray(decorators)) decorators = [decorators];
   }
 
   if (typeof elt === 'string') {
-
+    // If we have a string, then it is a simple html element.
     node = new HtmlNode(elt, attrs, children);
 
   } else if (typeof elt === 'function') {
-    // Should assert that elt is indeed a Controller.
-    let controller = new elt(attrs);
-    node = controller.view(attrs, children) || new HtmlNode(null);
-    node.addController(controller);
+    // If it is a function, then the element is composite.
+    // FIXME we should probably set up class forwarding here
+    // as well as some common html attributes.
+    node = elt(attrs, children);
+  } else {
+    throw new Error('wrong type')
   }
 
   // A decorator generally sets up events and add controllers
-  decorators = decorators || [];
-  for (let d of decorators) {
-    node = d(node) || node;
+  if (decorators) {
+    for (let d of decorators) {
+      node = d(node) || node;
+    }
   }
 
   // At this point, we have a node that is ready to be inserted or something.

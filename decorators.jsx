@@ -68,3 +68,10 @@ export function cls(obj) {
   }
 
 }
+
+
+export function ctrl(...ctrls) {
+  return function ctrlDecorator(node) {
+    for (let c of ctrls) node.addController(c);
+  }
+}
