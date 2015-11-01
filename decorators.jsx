@@ -20,7 +20,7 @@ export function click(cbk) {
     return function clickDecorator(node) {
 
       node.once('dom-created', function () {
-        this.element.addEventListener('click', cbk);
+        this.element.addEventListener('click', cbk.bind(node));
       });
 
       return node;
@@ -37,10 +37,6 @@ export class ClassController extends Controller {
   addStyles(...args) {
     this.classes = this.classes.concat(args);
   }
-
-}
-
-export class StyleController extends Controller {
 
 }
 

@@ -1,6 +1,6 @@
 
 import {forceString} from './helpers';
-import {Observable} from './observable';
+import {Observable, o} from './observable';
 
 let ident = 0;
 
@@ -304,9 +304,22 @@ export function elt(elt, attrs, ...children) {
 
   } else if (typeof elt === 'function') {
     // If it is a function, then the element is composite.
-    // FIXME we should probably set up class forwarding here
-    // as well as some common html attributes.
     node = elt(attrs, children);
+
+    // The following code forwards diverse and common html attributes automatically.
+    if (attrs.class) {
+      node.attrs.class = o(attrs.class, node.attrs.class||'', (c1, c2) => `${c1} ${c2}`);
+    }
+
+    if (attrs.style) {
+      node.attrs.style = o(attrs.style, node.attrs.style||'', (c1, c2) => `${c1};${c2}`);
+    }
+
+    for (let att of ['id', 'tabindex']) {
+      if (attrs[att]) // The last one to speak wins
+        node.attrs[att] = attrs[att];
+    }
+
   } else {
     throw new Error('wrong type')
   }
