@@ -1,6 +1,6 @@
 {
 	"stage": 0,
 	"loose": ["es6.forOf", "es6.classes", "es6.templateLiterals"],
-	"jsxPragma": "elt",
+	"jsxPragma": "c",
 	"sourceMaps": "inline"
 }
