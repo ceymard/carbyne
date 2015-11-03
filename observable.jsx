@@ -49,7 +49,9 @@ export class Observable {
   onchange(fn) {
 
     // listeners are always given the current value if it is available upon subscribing.
-    if (this.hasOwnProperty('_value')) fn(this._value);
+    if (this.hasOwnProperty('_value')) {
+      fn(this._value);
+    }
 
     if (this._destroyed) return;
 

@@ -206,8 +206,6 @@ export class HtmlNode {
   }
 
   /**
-   * @param  {[type]} child [description]
-   * @return {[type]}       [description]
    */
   prepend(child) {
 
@@ -215,13 +213,16 @@ export class HtmlNode {
 
   /**
    * Convenience functions like jQuery
-   * @param  {[type]} node [description]
-   * @return {[type]}      [description]
+   * Adds the node right after this one.
    */
   after(node) {
 
   }
 
+  /**
+   * Convenience function like the one of jQuery.
+   * Adds the node before this element.
+   */
   before(node) {
 
   }
@@ -273,17 +274,46 @@ export class HtmlNode {
 }
 
 var _virtual_count = 0;
+/**
+ * It has no children. It may have in the future, but it has to wait until
+ * it's mounted to actually start appending things into the DOM.
+ */
 export class VirtualNode extends HtmlNode {
 
   constructor() {
     super(null, {}, []);
   }
 
+  /**
+   * The virtual node
+   */
   mount(parent, before) {
     _virtual_count++;
-    // Virtual nodes have two comments between which they
     this.element = document.createComment(`virtual ${_virtual_count}`);
     parent.insertBefore(this.element, before);
+  }
+
+  appendChild(child) {
+    if (child instanceof HtmlNode) {
+      child.mount(this.element.parentNode, this.element);
+    } else {
+      // In the case of a typical DOM node, just insert it before the comment.
+      this.element.parentNode.insertBefore(child, this.element);
+    }
+  }
+
+}
+
+
+/**
+ * An ObservableNode is a node built on an observable.
+ * It extends the VirtualNode in the sense that it needs the comment as an insertion point.
+ */
+export class ObservableNode extends VirtualNode {
+
+  constructor(obs) {
+    super();
+    this.obs = obs;
   }
 
 }
@@ -310,11 +340,19 @@ export function elt(elt, attrs, ...children) {
 
     // The following code forwards diverse and common html attributes automatically.
     if (attrs.class) {
-      node.attrs.class = o(attrs.class, node.attrs.class||'', (c1, c2) => `${c1} ${c2}`);
+      if (node.attrs.class)
+        // NOTE the fact that we use o() does not necessarily create an Observable ;
+        // if neither of the class attributes are, then the function returns directly
+        // with the value.
+        node.attrs.class = o(attrs.class, node.attrs.class, (c1, c2) => `${c1} ${c2}`);
+      else node.attrs.class = attrs.class;
     }
 
+    // Forward the style attriute.
     if (attrs.style) {
-      node.attrs.style = o(attrs.style, node.attrs.style||'', (c1, c2) => `${c1};${c2}`);
+      if (node.attrs.style)
+        node.attrs.style = o(attrs.style, node.attrs.style, (c1, c2) => `${c1};${c2}`);
+      else node.attrs.style = attrs.style;
     }
 
     for (let att of ['id', 'tabindex']) {
