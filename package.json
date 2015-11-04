@@ -2,13 +2,9 @@
   "name": "carbyne",
   "version": "0.0.1",
   "repository": "https://github.com/ceymard/carbyne",
-  "scripts": {
-    "compile": "babel -d . . -x .jsx -i node_modules",
-    "prepublish": "npm run compile"
-  },
   "description": "some description",
   "license": "MIT",
-  "main": "./src/carbyne.jsx",
+  "main": "./carbyne.jsx",
   "devDependencies": {
     "webpack": "^1.12.2"
   }

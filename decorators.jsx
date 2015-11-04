@@ -28,25 +28,9 @@ export function click(cbk) {
 
 }
 
-export class ClassController extends Controller {
-
-  constructor() {
-    super(...arguments);
-  }
-
-  addStyles(...args) {
-    this.classes = this.classes.concat(args);
-  }
-
-}
-
 export function cls(obj) {
 
   return function clsDecorator(node) {
-
-    // There is no need to have several controllers on the node, so we first try to find
-    // if there is one here.
-    let ctrl = node.getController(ClassController);
 
     node.once('dom-created', function () {
       let clslist = this.element.classList;
