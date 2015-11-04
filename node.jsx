@@ -286,17 +286,12 @@ export class VirtualNode extends HtmlNode {
    */
   mount(parent, before) {
     _virtual_count++;
-    this.element = document.createComment(`virtual ${_virtual_count}`);
+    this.element = document.createComment(` //virtual-node ${_virtual_count} `);
     parent.insertBefore(this.element, before);
-  }
 
-  appendChild(child) {
-    if (child instanceof HtmlNode) {
-      child.mount(this.element.parentNode, this.element);
-    } else {
-      // In the case of a typical DOM node, just insert it before the comment.
-      this.element.parentNode.insertBefore(child, this.element);
-    }
+    // prev is used for debug purposes.
+    let prev = document.createComment(` virtual-node ${_virtual_count} `);
+    parent.insertBefore(prev, this.element);
   }
 
 }
@@ -312,22 +307,34 @@ export class ObservableNode extends VirtualNode {
     super();
     this.obs = obs;
     this.dom_children = [];
+    this.last_was_text = false;
   }
 
   mount() {
     super(...arguments);
+
     this.observe(this.obs, (value) => {
+      let is_text = !(value instanceof HtmlNode || value instanceof Node || Array.isArray(value));
+      if (is_text && this.last_was_text) {
+        // Small optimization in the case that we just have to modify a text node
+        // to avoid removing and adding Nodes around by reusing the last one we
+        // were using.
+        this.dom_children[0].textContent = forceString(value);
+        return;
+      }
+
       this.resetChildren();
       this.append(value);
+      this.last_was_text = is_text;
     });
   }
 
   addHtmlNode(child) {
-    child.mount(this.element.parentNode, this.element.nextSibling);
+    child.mount(this.element.parentNode, this.element);
   }
 
   addNode(child) {
-    this.element.parentNode.insertBefore(child, this.element.nextSibling);
+    this.element.parentNode.insertBefore(child, this.element);
     this.dom_children.push(child);
   }
 
