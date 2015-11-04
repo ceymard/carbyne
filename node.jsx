@@ -75,7 +75,7 @@ export class HtmlNode {
       this.on('unmount', obs.onchange(cbk));
     else
       // Fire immediately if this is not an observable.
-      cbk();
+      cbk(obs);
   }
 
   /////////////////////////////////////////////////////////////////
