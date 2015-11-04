@@ -173,35 +173,31 @@ export class HtmlNode {
     this.trigger('dom-created');
   }
 
-  append(child, before = null) {
+  addHtmlNode(child) {
+    child.mount(this.element);
+  }
+
+  addNode(child) {
+    this.element.appendChild(child);
+  }
+
+  append(child) {
+
+    if (child instanceof Observable) {
+      child = new ObservableNode(child);
+    }
 
     if (Array.isArray(child)) {
-      for (let c of child) this.append(c, before);
+      for (let c of child) this.append(c);
     } else if (child instanceof Node) {
-      this.element.insertBefore(child, before);
+      this.addNode(child);
     } else if (child instanceof HtmlNode) {
       this.children.push(child);
       child.parent = this;
-      child.mount(this.element, before);
-    } else if (child instanceof Observable) {
-      let dynamic_children = null;
-      // Create a text child anyway.
-      let domnode = document.createTextNode('');
-      this.element.insertBefore(domnode, before);
-
-      // FIXME we should be able to also observe HTMLNodes, regular nodes,
-      // and arrays of values, not just their text equivalents.
-      //
-      // NOTE we should probably use something like a VirtualNode, for which
-      // we know that its contents can completely vary ?
-      this.observe(child, (val) => {
-        domnode.textContent = forceString(val);
-      });
+      this.addHtmlNode(child);
     } else {
-      let domnode = document.createTextNode('');
-      domnode.textContent = forceString(child);
-
-      this.element.insertBefore(domnode, before);
+      let domnode = document.createTextNode(forceString(child));
+      this.addNode(domnode);
     }
 
   }
@@ -292,8 +288,6 @@ export class VirtualNode extends HtmlNode {
     _virtual_count++;
     this.element = document.createComment(`virtual ${_virtual_count}`);
     parent.insertBefore(this.element, before);
-
-    this.dom_children = [];
   }
 
   appendChild(child) {
@@ -317,6 +311,34 @@ export class ObservableNode extends VirtualNode {
   constructor(obs) {
     super();
     this.obs = obs;
+    this.dom_children = [];
+  }
+
+  mount() {
+    super(...arguments);
+    this.observe(this.obs, (value) => {
+      this.resetChildren();
+      this.append(value);
+    });
+  }
+
+  addHtmlNode(child) {
+    child.mount(this.element.parentNode, this.element.nextSibling);
+  }
+
+  addNode(child) {
+    this.element.parentNode.insertBefore(child, this.element.nextSibling);
+    this.dom_children.push(child);
+  }
+
+  resetChildren() {
+    let parent = this.element.parentNode;
+    for (let n of this.dom_children)
+      parent.removeChild(n);
+    this.dom_children = [];
+    for (let c of this.children) {
+      c.remove();
+    }
   }
 
 }
