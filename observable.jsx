@@ -46,7 +46,7 @@ export class Observable {
     return this;
   }
 
-  onchange(fn) {
+  addObserver(fn) {
 
     // listeners are always given the current value if it is available upon subscribing.
     if (this.hasOwnProperty('_value')) {
@@ -129,7 +129,7 @@ export class DependentObservable extends Observable {
         let resolved = false;
         this.missing++;
         this.args.push(undefined);
-        this.unloaders.push(dep.onchange((v) => {
+        this.unloaders.push(dep.addObserver((v) => {
           if (!resolved) {
             this.missing--;
             resolved = true;
@@ -245,8 +245,8 @@ o.get = function get(v) {
  * Setup an onchange event on the observable, or just call the
  * onchange value once if the provided o is not an observable.
  */
-o.onchange = function onchange(o, fn) {
-  if (o instanceof Observable) return o.onchange(fn);
+o.observe = function observe(o, fn) {
+  if (o instanceof Observable) return o.addObserver(fn);
   // the object is not observable, so the onchange value is immediately called.
   fn(o);
   // return a function that does nothing, since nothing is being registered.

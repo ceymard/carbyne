@@ -71,9 +71,10 @@ export class HtmlNode {
   observe(obs, cbk) {
     // This is to make sure that the callback is not fired anymore
     // after this component is unbound.
-    if (obs instanceof Observable)
-      this.on('unmount', obs.onchange(cbk));
-    else
+    if (obs instanceof Observable) {
+      let unregister = obs.addObserver(cbk)
+      this.on('unmount', unregister);
+    } else
       // Fire immediately if this is not an observable.
       cbk(obs);
   }
