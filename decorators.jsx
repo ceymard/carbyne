@@ -6,7 +6,6 @@ export function bind(obs, opts) {
   if (!obs) return;
 
   return function bindDecorator(node) {
-    console.log(BindController);
     let ctrl = new BindController(obs, opts);
     node.addController(ctrl);
     return node;

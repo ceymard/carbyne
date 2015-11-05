@@ -185,6 +185,7 @@ export class HtmlNode {
     }
 
     if (Array.isArray(child)) {
+      // FIXME should probably do something with DOM fragments here since they allow reflow minimization.
       for (let c of child) this.append(c);
     } else if (child instanceof Node) {
       this.addNode(child);

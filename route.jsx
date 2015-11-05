@@ -3,34 +3,64 @@ import {o} from './observable';
 import {Controller} from './controller';
 import {VirtualNode} from './node';
 
-export class State {
-
-  constructor(desc) {
-
-  }
-
-}
-
 
 export class Router {
 
   constructor() {
     this.states = {};
-    // maps fully constructed urls to states.
-    this.url_mapping = {};
+    // Query is an observable, since we don't use it in routing.
+    this.query = o();
   }
 
+  /**
+   * Create a new state for our router.
+   * @param {String} name The name of the state.
+   * @param {object} desc The full description of the state.
+   */
   addState(name, desc) {
 
+    if (this.states[name]) throw new Error(`state '${name}' is already defined`);
+
+    let state = {
+      name: name,
+      url: desc.url || '',
+      view: desc.view || null,
+      views: desc.views || {},
+      data: desc.data || {},
+      parent: desc.parent || null,
+      is_active: o(false),
+      params: []
+    }
+
+    let parent_idx = name.lastIndexOf('.');
+    if (!desc.parent && name.lastIndexOf('.') > -1) {
+      state.parent = name.substring(0, parent_idx);
+    }
+    if (state.parent && !this.states[state.parent]) throw new Error(`parent state '${state.parent}' does not exist`);
+
+    // Get the full URL.
+    this.states[name] = state;
+    let parent = this.states[state.parent];
+    let full_url = state.url;
+    while (parent) {
+      full_url = parent.url + full_url;
+    }
+
+    // Extract the name parameters and convert them to [^\/]+
+    // FIXME
+    // Also extract the name reconstruction from groupings.
+
+    state.regexp = new RegExp(`^${full_url}$`, 'i');
   }
 
-  dispatch(url, params, query) {
-
-  }
-
-  // Will only be called on the main router.
   setUrl(url) {
-
+    // 1. Find the state that matches with the url.
+    // 2. Compute its parents to have the full list of states that are to be activated.
+    // 3. Evaluate the decorators if any to check protection on all the states.
+    //    3.b. if something was returned, do something about it (probably change URL and state, or
+    //    cancel the change with some error)
+    // 4. Swap the active state list (Views will unload their contents when they change since
+    //    they watch the router)
   }
 
   go(state_name, params, query) {

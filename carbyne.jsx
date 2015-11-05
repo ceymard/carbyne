@@ -9,6 +9,9 @@ function c(elt, attrs, ...children) {
   let node = null;
   attrs = attrs || {};
 
+  // special case for templates.
+  if (elt === 'fragment') return children;
+
   let decorators = attrs.$$;
 
   if (decorators) {
