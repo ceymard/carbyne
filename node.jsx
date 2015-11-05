@@ -183,6 +183,8 @@ export class HtmlNode {
 
   append(child) {
 
+    if (typeof child === 'function') child = child();
+
     if (child instanceof Observable) {
       child = new ObservableNode(child);
     }
@@ -314,7 +316,7 @@ export class ObservableNode extends VirtualNode {
     super(...arguments);
 
     this.observe(this.obs, (value) => {
-      let is_text = !(value instanceof HtmlNode || value instanceof Node || Array.isArray(value));
+      let is_text = !(value instanceof HtmlNode || value instanceof Node || Array.isArray(value) || typeof value === 'function');
       if (is_text && this.last_was_text) {
         // Small optimization in the case that we just have to modify a text node
         // to avoid removing and adding Nodes around by reusing the last one we
