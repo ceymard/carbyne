@@ -9,6 +9,17 @@ export class BindController extends Controller {
     this.opts = opts;
   }
 
+  setNode(node) {
+    super(node);
+    node.on('mount', () => {
+      // We're calling bind on a classic HTML node.
+      let tag = node.element.tagName.toLowerCase();
+
+      // FIXME need to check if we're in editing mode of an HTML node (usually by checking its attributes)
+      if (tag === 'input') this.linkToInput();
+    });
+  }
+
   linkToInput() {
 
     let obs = this.obs;
@@ -62,15 +73,6 @@ export class BindController extends Controller {
   }
 
   linkToBind(bind) {
-
-  }
-
-  link() {
-    // We're calling bind on a classic HTML node.
-    let tag = this.node.element.tagName.toLowerCase();
-
-    // FIXME need to check if we're in editing mode of an HTML node (usually by checking its attributes)
-    if (tag === 'input') this.linkToInput();
 
   }
 

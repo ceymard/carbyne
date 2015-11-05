@@ -12,16 +12,6 @@ export class Controller {
     this.node = null;
   }
 
-  /**
-   * Called when dom was created.
-   */
-  link() { }
-
-  /**
-   * Called if unmounted.
-   */
-  unload() { }
-
   setNode(node) {
     this.node = node;
   }

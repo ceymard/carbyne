@@ -98,7 +98,7 @@ export class HtmlNode {
     let node = this;
 
     let all = opts.all;
-    let recursive = opts.recursive == true;
+    let recursive = opts.recursive === true;
 
     while (node) {
       for (let ctrl of node.controllers) {
@@ -125,7 +125,6 @@ export class HtmlNode {
   addController(cn) {
     this.controllers.push(cn);
     cn.setNode(this);
-    // cn.node = this;
   }
 
   /////////////////////////////////////////////////////////////////
@@ -162,10 +161,6 @@ export class HtmlNode {
       }
     } else {
       this.element = document.createComment('!');
-    }
-
-    for (let ctrl of this.controllers) {
-      ctrl.link();
     }
 
     // The created event will allow the decorators to do some set up on the dom
