@@ -281,6 +281,10 @@ export class VirtualNode extends HtmlNode {
 
   constructor() {
     super(null, {}, []);
+    // We have to track manually the DOM children that we insert, since
+    // the removal is between two comment nodes.
+    this.dom_children = [];
+    this.name = 'Virtual Node';
   }
 
   /**
@@ -288,12 +292,39 @@ export class VirtualNode extends HtmlNode {
    */
   mount(parent, before) {
     _virtual_count++;
-    this.element = document.createComment(` //virtual-node ${_virtual_count} `);
+    let name = ` ${this.name}[${_virtual_count}] `;
+    this.element = document.createComment(name + 'end');
     parent.insertBefore(this.element, before);
 
     // prev is used for debug purposes.
-    let prev = document.createComment(` virtual-node ${_virtual_count} `);
+    let prev = document.createComment(name + 'start');
     parent.insertBefore(prev, this.element);
+  }
+
+  addHtmlNode(child) {
+    child.mount(this.element.parentNode, this.element);
+  }
+
+  addNode(child) {
+    this.element.parentNode.insertBefore(child, this.element);
+    this.dom_children.push(child);
+  }
+
+  removeChildren() {
+    let parent = this.element.parentNode;
+    for (let n of this.dom_children)
+      parent.removeChild(n);
+    this.dom_children = [];
+    for (let c of this.children) {
+      c.remove();
+    }
+  }
+
+  remove() {
+    // Since the children are not children of a comment node, we need to manually
+    // clean them up.
+    this.removeChildren();
+    super();
   }
 
 }
@@ -308,8 +339,8 @@ export class ObservableNode extends VirtualNode {
   constructor(obs) {
     super();
     this.obs = obs;
-    this.dom_children = [];
     this.last_was_text = false;
+    this.name = 'Observable'
   }
 
   mount() {
@@ -325,29 +356,10 @@ export class ObservableNode extends VirtualNode {
         return;
       }
 
-      this.resetChildren();
+      this.removeChildren();
       this.append(value);
       this.last_was_text = is_text;
     });
-  }
-
-  addHtmlNode(child) {
-    child.mount(this.element.parentNode, this.element);
-  }
-
-  addNode(child) {
-    this.element.parentNode.insertBefore(child, this.element);
-    this.dom_children.push(child);
-  }
-
-  resetChildren() {
-    let parent = this.element.parentNode;
-    for (let n of this.dom_children)
-      parent.removeChild(n);
-    this.dom_children = [];
-    for (let c of this.children) {
-      c.remove();
-    }
   }
 
 }
