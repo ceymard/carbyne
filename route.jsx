@@ -8,6 +8,10 @@ export class Router {
 
   constructor() {
     this.states = {};
+
+    this.active_views = {};
+    this.data = null;
+
     // Query is an observable, since we don't use it in routing.
     this.query = o();
   }
@@ -57,13 +61,14 @@ export class Router {
     // 1. Find the state that matches with the url.
     // 2. Compute its parents to have the full list of states that are to be activated.
     // 3. Evaluate the decorators if any to check protection on all the states.
+    //    NOTE do not reevaluate states that don't need to be changed. Also update the params.
     //    3.b. if something was returned, do something about it (probably change URL and state, or
     //    cancel the change with some error)
     // 4. Swap the active state list (Views will unload their contents when they change since
     //    they watch the router)
   }
 
-  go(state_name, params, query) {
+  go(state_name, params) {
 
   }
 
