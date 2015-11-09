@@ -194,10 +194,11 @@ export class Router {
 }
 
 
+var count = 0;
 export class ViewNode extends VirtualNode {
   constructor(name) {
     super();
-    this.name = `View '${name}'`;
+    this.name = `View<${count++}> '${name}'`;
   }
 }
 
@@ -215,8 +216,7 @@ export class ViewController extends Controller {
       if (!this.router) {
         let parent_ctrl = node.parent.getController(ViewController);
         this.setRouter(parent_ctrl.router);
-      }
-      this.link();
+      } else this.link();
     });
   }
 

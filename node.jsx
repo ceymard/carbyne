@@ -248,7 +248,6 @@ export class HtmlNode {
 
 }
 
-var _virtual_count = 0;
 /**
  * It has no children. It may have in the future, but it has to wait until
  * it's mounted to actually start appending things into the DOM.
@@ -267,13 +266,11 @@ export class VirtualNode extends HtmlNode {
    * The virtual node
    */
   mount(parent, before) {
-    _virtual_count++;
-    let name = ` ${this.name}[${_virtual_count}] `;
-    this.element = document.createComment(name + 'end');
+    this.element = document.createComment(this.name + 'end');
     parent.insertBefore(this.element, before);
 
     // prev is used for debug purposes.
-    this.start_element = document.createComment(name + 'start');
+    this.start_element = document.createComment(this.name + 'start');
     parent.insertBefore(this.start_element, this.element);
     this.trigger('mount', parent, before);
   }
@@ -309,6 +306,8 @@ export class VirtualNode extends HtmlNode {
 }
 
 
+var _obs_count = 0;
+
 /**
  * An ObservableNode is a node built on an observable.
  * It extends the VirtualNode in the sense that it needs the comment as an insertion point.
@@ -319,7 +318,8 @@ export class ObservableNode extends VirtualNode {
     super();
     this.obs = obs;
     this.last_was_text = false;
-    this.name = 'Observable'
+    _obs_count++;
+    this.name = `Observable<${_obs_count}>`
   }
 
   mount() {
