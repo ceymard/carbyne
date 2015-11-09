@@ -3,14 +3,17 @@ import {o} from './observable';
 import {Controller} from './controller';
 import {VirtualNode} from './node';
 
+function _merge(o1, o2) {
+  for (let name in o2) o1[name] = o2[name];
+}
 
 export class Router {
 
   constructor() {
     this.states = {};
 
-    this.active_views = {};
-    this.computed_views = {};
+    this.view_nodes = {};
+    this.computed_views = o({});
 
     this.currently_active_states = [];
 
@@ -26,22 +29,6 @@ export class Router {
 
   default(name, args) {
     this.default = {name, args};
-  }
-
-  registerView(view) {
-    let name = view.name;
-
-    if (!(name in this.active_views))
-      this.active_views[name] = [];
-    this.active_views[name].push(view);
-    if (this.computed_views[name])
-      view.setContent(this.computed_views[name])
-  }
-
-  unregisterView(view) {
-    let av = this.active_views[view.name]||[];
-    let idx = av.indexOf(view);
-    if (idx > -1) av.splice(idx, 1);
   }
 
   /**
@@ -116,27 +103,26 @@ export class Router {
    * 			all inline.
    * @param  {Object} state The state object to activate.
    */
-  activate(state, params, states=[]) {
-    let prev = {};
+  activate(state, params, states=[], views={}, data={}) {
+
     if (state.parent) {
-      prev = this.activate(state.parent, params, states);
+      this.activate(state.parent, params, states, views, data);
     }
 
     states[state.name] = true;
     if (state.is_active.get()) {
-      // FIXME this means that a view that disappears from here does
-      // not disappear from the dom... should something be done about it ?
-      return {views: {}, data: state.active_data};
+      _merge(views, state.view_nodes);
+      _merge(data, state.active_data);
+      return;
     };
 
-    let views = Object.assign({}, prev.views||{});
-    let data = Object.assign({}, prev.data||{});
+    let _views = {};
+    // FIXME recreate data !!
 
-    state.fn(views, params, data);
-    state.active_views = views;
+    state.fn(_views, params, data);
+    state.view_nodes = _views;
     state.active_data = data;
-    // console.log(views, data);
-    return {views, data};
+    _merge(views, _views);
   }
 
   _go(state_name, params = {}) {
@@ -144,7 +130,10 @@ export class Router {
     if (!state) throw new Error(`no such state.`);
 
     let activated = {};
-    let {views, data} = this.activate(state, params, activated);
+
+    let new_views = {};
+    let data = {};
+    this.activate(state, params, activated, new_views, data);
 
     // NOTE if we got here, it means that the state change was validated.
 
@@ -160,13 +149,7 @@ export class Router {
 
     this.currently_active_states = activated;
 
-    for (let name in views) {
-      for (let v of this.active_views[name]||[]) {
-        v.setContent(views[name]);
-      }
-    }
-
-    this.computed_views = views;
+    this.computed_views.set(new_views);
   }
 
   /**
@@ -227,16 +210,19 @@ export class ViewController extends Controller {
 
   setNode(node) {
     super(node);
-    if (!this.router) {
-      node.on('mount', (ev) => {
+    this.unregister = null;
+    node.on('mount', (ev) => {
+      if (!this.router) {
         let parent_ctrl = node.parent.getController(ViewController);
         this.setRouter(parent_ctrl.router);
-      });
-    }
-
-    node.on('unmount', () => {
-      if (this.router) this.router.unregisterView(this);
+      }
+      this.link();
     });
+  }
+
+  link() {
+    if (this.node && this.router && this.node.element)
+      this.node.observe(this.router.computed_views.path(this.name), (v) => this.setContent(v));
   }
 
   setContent(c) {
@@ -246,7 +232,7 @@ export class ViewController extends Controller {
 
   setRouter(router) {
     this.router = router;
-    router.registerView(this);
+    this.link();
   }
 }
 
@@ -258,11 +244,12 @@ export function View(attrs, children) {
 
   let vctrl = new ViewController(attrs.name);
 
-  if (attrs.router)
-    vctrl.setRouter(attrs.router);
 
   let node = new ViewNode(attrs.name);
   node.addController(vctrl);
+
+  if (attrs.router)
+    vctrl.setRouter(attrs.router);
 
   return node;
 

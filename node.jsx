@@ -178,6 +178,8 @@ export class HtmlNode {
 
   append(child) {
 
+    if (child === undefined) return;
+
     if (typeof child === 'function') child = child();
 
     if (child instanceof Observable) {
