@@ -225,9 +225,16 @@ export class ViewController extends Controller {
 
   setNode(node) {
     super(node);
-    if (!this.router) node.on('mount', function () {
-      // look for a parent controller.
-      // that way we can find which view we are linked to in the router.
+    if (!this.router) {
+      node.on('mount', (ev) => {
+        let parent_ctrl = node.parent.getController(ViewController);
+        this.setRouter(parent_ctrl.router);
+      });
+    }
+
+    node.on('unmount', () => {
+      if (this.router) this.router.unregisterView(this);
+      console.log('???');
     });
   }
 

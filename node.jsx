@@ -98,7 +98,7 @@ export class HtmlNode {
     let node = this;
 
     let all = opts.all;
-    let recursive = opts.recursive === true;
+    let recursive = opts.recursive != false;
 
     while (node) {
       for (let ctrl of node.controllers) {
@@ -201,28 +201,6 @@ export class HtmlNode {
   }
 
   /**
-   */
-  prepend(child) {
-
-  }
-
-  /**
-   * Convenience functions like jQuery
-   * Adds the node right after this one.
-   */
-  after(node) {
-
-  }
-
-  /**
-   * Convenience function like the one of jQuery.
-   * Adds the node before this element.
-   */
-  before(node) {
-
-  }
-
-  /**
    * Mount the node onto the DOM.
    * @param  {Node} parent The parent DOM node.
    * @param  {Node} before An optionnal element before which to add it. If null,
@@ -293,8 +271,9 @@ export class VirtualNode extends HtmlNode {
     parent.insertBefore(this.element, before);
 
     // prev is used for debug purposes.
-    let prev = document.createComment(name + 'start');
-    parent.insertBefore(prev, this.element);
+    this.start_element = document.createComment(name + 'start');
+    parent.insertBefore(this.start_element, this.element);
+    this.trigger('mount', parent, before);
   }
 
   addHtmlNode(child) {
@@ -321,6 +300,7 @@ export class VirtualNode extends HtmlNode {
     // Since the children are not children of a comment node, we need to manually
     // clean them up.
     this.removeChildren();
+    this.start_element.parentNode.removeChild(this.start_element);
     super();
   }
 
