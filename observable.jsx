@@ -1,5 +1,25 @@
 
-let OBJ_PROTO = Object.getPrototypeOf({});
+export function pathget(obj, path) {
+  path = path.slice('.');
+  for (let p of path) {
+    if (!obj) break;
+    obj = obj[p];
+  }
+  return obj;
+}
+
+
+export function pathset(obj, path, value) {
+  path = path.slice('.');
+  let last = path.pop();
+  for (let p of path) {
+    // create objects as we need it.
+    if (!obj[p]) obj[p] = {};
+    obj = obj[p];
+  }
+  obj[last] = value;
+}
+
 
 export class Observable {
 
@@ -19,19 +39,13 @@ export class Observable {
     return this._value;
   }
 
-  set(value) {
+  set(value, force = false) {
     // FIXME need to check if the value is a promise or an observable.
 
     if (value instanceof Observable) value = value.get();
 
-    if (value && value.then) {
-      // This is a promise, so we're going to bind the set on its then.
-      value.then((val) => this.set(val));
-      return this;
-    }
-
     // No need to change.
-    if (this._value === value) return;
+    if (!force && this._value === value) return;
 
     this._value = value;
 
@@ -92,10 +106,16 @@ export class Observable {
    * @param  {String} path The path in dot format.
    * @return {DependentObservable} The resulting observable.
    */
-  prop(path, oneway = false) {
+  path(path, oneway = false) {
 
     // FIXME this is not implemented !
-    let o = new Observable(path(this._value, path));
+    let o = new Observable(null);
+    let unload = this.addObserver((v) => o.set(pathget(this._value, path)));
+    let unload2 = o.addObserver((v) => {
+      // Set path of original object.
+      pathset(this._value, path, v);
+      this.set(this._value, true);
+    });
     return o;
 
   }

@@ -3,14 +3,12 @@ import {bind, click, cls, transition, ctrl} from './decorators';
 import {Controller} from './controller';
 import {o, Observable} from './observable';
 import {HtmlNode, VirtualNode} from './node';
+import {Router, View} from './router';
 
 
 function c(elt, attrs, ...children) {
   let node = null;
   attrs = attrs || {};
-
-  // special case for templates.
-  if (elt === 'fragment') return children;
 
   let decorators = attrs.$$;
 
@@ -64,8 +62,13 @@ function c(elt, attrs, ...children) {
   return node;
 }
 
+function Fragment(attrs, children) {
+  return children;
+}
 
 module.exports = {c, o, Observable, HtmlNode, VirtualNode,
   Controller,
-  bind, click, cls, transition, ctrl
+  bind, click, cls, transition, ctrl,
+  Fragment,
+  Router, View
 };
