@@ -124,6 +124,8 @@ export class Router {
 
     states[state.name] = true;
     if (state.is_active.get()) {
+      // FIXME this means that a view that disappears from here does
+      // not disappear from the dom... should something be done about it ?
       return {views: {}, data: state.active_data};
     };
 
@@ -234,7 +236,6 @@ export class ViewController extends Controller {
 
     node.on('unmount', () => {
       if (this.router) this.router.unregisterView(this);
-      console.log('???');
     });
   }
 

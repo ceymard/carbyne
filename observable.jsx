@@ -1,6 +1,6 @@
 
 export function pathget(obj, path) {
-  path = path.slice('.');
+  path = path.split('.');
   for (let p of path) {
     if (!obj) break;
     obj = obj[p];
@@ -10,7 +10,7 @@ export function pathget(obj, path) {
 
 
 export function pathset(obj, path, value) {
-  path = path.slice('.');
+  path = path.split('.');
   let last = path.pop();
   for (let p of path) {
     // create objects as we need it.
