@@ -247,10 +247,6 @@ export class HtmlNode {
     for (let ctrl of this.controllers)
       ctrl.destroy();
 
-    if (this.parent) {
-      this.parent.removeChild(this);
-      this.parent = null;
-    }
     this._unmonted = true;
   }
 
@@ -264,6 +260,10 @@ export class HtmlNode {
     // should check if we're already unmounted.
     this.unmount();
     this.element.parentNode.removeChild(this.element);
+    if (this.parent) {
+      this.parent.removeChild(this);
+      this.parent = null;
+    }
   }
 
 }

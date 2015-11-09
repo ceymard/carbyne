@@ -124,7 +124,7 @@ export class Router {
 
     states[state.name] = true;
     if (state.is_active.get()) {
-      return {views: state.active_views, data: state.active_data};
+      return {views: {}, data: state.active_data};
     };
 
     let views = Object.assign({}, prev.views||{});

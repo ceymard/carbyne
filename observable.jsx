@@ -183,7 +183,7 @@ export class DependentObservable extends Observable {
   removeListener(fn) {
     super(fn);
     if (this.listeners.length === 0) {
-      for (d of this.unloaders) d(); // unregister all the dependencies.
+      for (let d of this.unloaders) d(); // unregister all the dependencies.
     }
   }
 }
