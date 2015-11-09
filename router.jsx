@@ -105,7 +105,7 @@ export class Router {
       let st = this.states[name];
       var matches = st.regexp.exec(url);
       if (matches) {
-        this.go(st.name); // FIXME parse params !!!!
+        this._go(st.name); // FIXME parse params !!!!
         break;
       }
     }
@@ -137,13 +137,7 @@ export class Router {
     return {views, data};
   }
 
-  /**
-   * [go description]
-   * @param  {[type]} state_name [description]
-   * @param  {[type]} params     [description]
-   * @return {Promise} A promise that tells when the state has been fully activated.
-   */
-  go(state_name, params = {}) {
+  _go(state_name, params = {}) {
     let state = this.states[state_name];
     if (!state) throw new Error(`no such state.`);
 
@@ -171,7 +165,18 @@ export class Router {
     }
 
     this.computed_views = views;
-    // NOTE  how do I track that view has not changed ?
+  }
+
+  /**
+   * [go description]
+   * @param  {[type]} state_name [description]
+   * @param  {[type]} params     [description]
+   * @return {Promise} A promise that tells when the state has been fully activated.
+   */
+  go(state_name, params = {}) {
+    // FIXME Find out what is the url that corresponds to the current state and setUrl it
+    // if we're linked to the location.
+    this._go(state_name, params);
   }
 
   linkWithLocation() {
