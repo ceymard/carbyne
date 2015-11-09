@@ -311,8 +311,9 @@ export class VirtualNode extends HtmlNode {
     for (let n of this.dom_children)
       parent.removeChild(n);
     this.dom_children = [];
-    for (let c of this.children) {
-      c.remove();
+    let children = this.children;
+    while (this.children.length) {
+      children[0].remove();
     }
   }
 
