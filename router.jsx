@@ -7,6 +7,80 @@ function _merge(o1, o2) {
   for (let name in o2) o1[name] = o2[name];
 }
 
+
+/**
+ * A single state, able to tell if it matches an url.
+ */
+export class State {
+  constructor(name, url, fn, parent) {
+    this.name = name;
+    this.url_part = url;
+    this.full_url = '';
+    this.fn = fn;
+    this.parent = parent;
+    this.param_names = [];
+    this.regexp = null;
+
+    this.view_nodes = null;
+    this.active_data = null;
+
+    this.is_active = o(false);
+    this.is_current = o(false);
+
+    this.build();
+  }
+
+  build() {
+    let full_url = this.url_part;
+    let parent = this.parent;
+
+    while (parent) {
+      full_url = `${parent.url_part}${full_url}`;
+      parent = parent.parent;
+    }
+
+    this.regexp = new RegExp('^' + full_url.replace(/:[a-zA-Z_$]\w*/g, (v) => {
+      this.param_names.push(v.slice(1)); // remove the leading :
+      return '([^/]+)';
+    }) + '$');
+
+    this.full_url = full_url;
+  }
+
+  activate(params = {}) {
+
+  }
+
+  getUrl(params = {}) {
+    let url = this.full_url;
+    for (let p of this.param_names) {
+      url = url.replace(`:${p}`, params[p]);
+    }
+    return url;
+  }
+
+  match(url) {
+    let matches = this.regexp.exec(url);
+
+    // this state does not match the url.
+    if (!matches) return null;
+
+    // build the params.
+    let params = {};
+    let pars = this.param_names;
+    let l = this.param_names.length;
+    for (let i = 0; i < l; i++) {
+      params[pars[i]] = matches[i + 1];
+    }
+    return params;
+  }
+
+}
+
+
+/**
+ * A router that can link to window.location.
+ */
 export class Router {
 
   constructor() {
@@ -25,6 +99,7 @@ export class Router {
 
     // Query is an observable, since we don't use it in routing.
     this.query = o(null);
+    this.params = o({});
   }
 
   default(name, args) {
@@ -40,48 +115,16 @@ export class Router {
 
     if (this.states[name]) throw new Error(`state '${name}' is already defined`);
 
-    let state = {
-      name: name,
-      url: url,
-      // view: desc.view || null,
-      // views: desc.views || {},
-      data: {},
-      fn: fn,
-      // parent: desc.parent || null,
-      is_active: o(false),
-      params: []
-    }
-
     let parent_idx = name.lastIndexOf('.');
+    let parent = null;
     if (parent_idx > -1) {
-      state.parent = name.substring(0, parent_idx);
-      if (!this.states[state.parent]) throw new Error(`parent state '${state.parent}' does not exist`);
-      state.parent = this.states[state.parent];
+      parent = name.substring(0, parent_idx);
+      if (!this.states[parent]) throw new Error(`parent state '${parent}' does not exist`);
+      parent = this.states[parent];
     }
 
-    // Get the full URL.
+    let state = new State(name, url, fn, parent);
     this.states[name] = state;
-    let parent = this.states[(state.parent||{}).name];
-    let full_url = state.url;
-    while (parent) {
-      full_url = parent.url + full_url;
-      parent = this.states[(parent.parent||{}).name];
-    }
-    state.url = full_url;
-
-    // Extract the name parameters and convert them to [^\/]+
-    // FIXME
-    // Also extract the name reconstruction from groupings.
-
-    state.regexp = new RegExp(`^${full_url}$`, 'i');
-
-    state.getUrl = (params) => {
-
-    };
-
-    state.match = (url) => {
-
-    };
   }
 
   setUrl(url) {
@@ -90,9 +133,9 @@ export class Router {
 
     for (let name in this.states) {
       let st = this.states[name];
-      var matches = st.regexp.exec(url);
-      if (matches) {
-        this._go(st.name); // FIXME parse params !!!!
+      let params = st.match(url);
+      if (params) {
+        this._go(st, params);
         break;
       }
     }
@@ -119,16 +162,13 @@ export class Router {
     let _views = {};
     // FIXME recreate data !!
 
-    state.fn(_views, params, data);
+    state.fn(_views, this.params, data);
     state.view_nodes = _views;
     state.active_data = data;
     _merge(views, _views);
   }
 
-  _go(state_name, params = {}) {
-    let state = this.states[state_name];
-    if (!state) throw new Error(`no such state.`);
-
+  _go(state, params = {}) {
     let activated = {};
 
     let new_views = {};
@@ -150,6 +190,7 @@ export class Router {
     this.currently_active_states = activated;
 
     this.computed_views.set(new_views);
+    this.params.set(params);
   }
 
   /**
@@ -159,9 +200,9 @@ export class Router {
    * @return {Promise} A promise that tells when the state has been fully activated.
    */
   go(state_name, params = {}) {
-    // FIXME Find out what is the url that corresponds to the current state and setUrl it
-    // if we're linked to the location.
-    this._go(state_name, params);
+    let state = this.states[state_name];
+    if (!state) throw new Error('no such state');
+    this._go(this.states[state_name], params);
   }
 
   linkWithLocation() {
@@ -180,9 +221,13 @@ export class Router {
   href(name, params) {
     return (node) => {
       let state = this.states[name];
-      node.attrs.href = '#' + state.url;
+      // node.attrs.href = '#' + state.getUrl(params);
 
       node.on('mount', (ev) => {
+        node.observe(params, (p) => {
+          node.element.href = '#' + state.getUrl(params);
+        });
+
         node.observe(state.is_active, (b) => {
           if (b) node.element.classList.add('active');
           if (!b) node.element.classList.remove('active');
@@ -194,11 +239,10 @@ export class Router {
 }
 
 
-var count = 0;
 export class ViewNode extends VirtualNode {
   constructor(name) {
     super();
-    this.name = `View<${count++}> '${name}'`;
+    this.name = `View<${name}>`;
   }
 }
 
@@ -254,25 +298,3 @@ export function View(attrs, children) {
   return node;
 
 }
-
-export function rref(router, path, args) {
-  return function routeDecorator(node) {
-
-  }
-}
-
-// NOTE This is what is needed :
-//
-// - Route aliasing : It is a good thing to call a route by a single name.
-// - Route default : what happens when we can't find the route ?
-// - isActive for links to know when their route is actually the active one.
-//    Have to be careful for the immense number of watchers that would create. Maybe
-//    associate them with the route somehow ?
-// - Route gards (before navigate to) that can return a route or just cancel the
-//    current route change.
-// - Child Routers ?
-
-// Decorate the routes. We're already using those, so why not use for instance
-// auth decorators ? (middlewares ?)
-// Should the route send events ?
-// Should we instead use promises to switch between states ?

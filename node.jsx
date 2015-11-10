@@ -44,19 +44,6 @@ export class HtmlNode {
     this.on(name, cbk);
   }
 
-  emit() {
-    // FIXME stop propagation ?
-    this.trigger.apply(this, arguments);
-    if (this.parent) this.parent.trigger.apply(this.parent, arguments);
-  }
-
-  broadcast() {
-    this.trigger.apply(this, arguments);
-    for (let c of this.children) {
-      c.broadcast.apply(c, arguments);
-    }
-  }
-
   trigger(event, ...args) {
     if (typeof event === 'string')
       event = {type: event, target: this, propagate: true, stopPropagation() { this.propagate = false; }};
@@ -244,6 +231,7 @@ export class HtmlNode {
       this.parent.removeChild(this);
       this.parent = null;
     }
+    this.element = null;
   }
 
 }
@@ -326,6 +314,8 @@ export class ObservableNode extends VirtualNode {
     super(...arguments);
 
     this.observe(this.obs, (value) => {
+      if (value === undefined) return;
+
       let is_text = !(value instanceof HtmlNode || value instanceof Node || Array.isArray(value) || typeof value === 'function');
       if (is_text && this.last_was_text) {
         // Small optimization in the case that we just have to modify a text node
