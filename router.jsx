@@ -29,6 +29,12 @@ export class State {
     this.build();
   }
 
+  deactivate() {
+    this.is_active.set(false);
+    this.view_nodes = null;
+    this.active_data = null;
+  }
+
   build() {
     let full_url = this.url_part;
     let parent = this.parent;
@@ -44,10 +50,6 @@ export class State {
     }) + '$');
 
     this.full_url = full_url;
-  }
-
-  activate(params = {}) {
-
   }
 
   getUrl(params = {}) {
@@ -177,14 +179,15 @@ export class Router {
 
     // NOTE if we got here, it means that the state change was validated.
 
+    let states = this.states;
     for (let name in this.currently_active_states) {
       if (!(name in activated)) {
-        this.states[name].is_active.set(false);
+        states[name].deactivate();
       }
     }
 
     for (let name in activated) {
-      this.states[name].is_active.set(true);
+      states[name].is_active.set(true);
     }
 
     this.currently_active_states = activated;
@@ -228,7 +231,14 @@ export class Router {
           node.element.href = '#' + state.getUrl(params);
         });
 
-        node.observe(state.is_active, (b) => {
+        node.observe(o(state.is_active, this.params, (act, pars) => {
+          if (!act) return false;
+          if (!params) return true;
+          for (let x in pars) {
+            if (pars[x] !== params[x].toString()) return false;
+          }
+          return true;
+        }), (b) => {
           if (b) node.element.classList.add('active');
           if (!b) node.element.classList.remove('active');
         })

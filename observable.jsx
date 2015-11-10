@@ -26,7 +26,6 @@ export class Observable {
   constructor(value) {
     this.listeners = [];
     this._destroyed = false;
-    this._waiting_promise = null;
 
     this._value = undefined;
     this.set(value);
@@ -111,11 +110,13 @@ export class Observable {
     // FIXME this is not implemented !
     let o = new Observable(null);
     let unload = this.addObserver((v) => o.set(pathget(this._value, path)));
-    let unload2 = o.addObserver((v) => {
-      // Set path of original object.
-      pathset(this._value, path, v);
-      this.set(this._value, true);
-    });
+    if (!oneway) {
+      let unload2 = o.addObserver((v) => {
+        // Set path of original object.
+        pathset(this._value, path, v);
+        this.set(this._value, true);
+      });
+    }
     return o;
 
   }
