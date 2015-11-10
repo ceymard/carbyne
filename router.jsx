@@ -25,7 +25,6 @@ export class State {
     this.active_data = null;
 
     this.is_active = o(false);
-    this.is_current = o(false);
 
     this.build();
   }
@@ -74,6 +73,34 @@ export class State {
     }
     return params;
   }
+
+  /**
+   * NOTE This function should return a promise instead of doing it
+   * 			all inline.
+   * @param  {Object} state The state object to activate.
+   */
+  activate(params, activated={}, views={}, data={}) {
+
+    if (this.parent) {
+      this.parent.activate(params, activated, views, data);
+    }
+
+    activated[this.name] = true;
+    if (this.is_active.get()) {
+      _merge(views, this.view_nodes);
+      _merge(data, this.active_data);
+      return;
+    };
+
+    let _views = {};
+    // FIXME recreate data !!
+
+    this.fn(_views, params, data);
+    this.view_nodes = _views;
+    this.active_data = data;
+    _merge(views, _views);
+  }
+
 
 }
 
@@ -141,39 +168,12 @@ export class Router {
     }
   }
 
-  /**
-   * NOTE This function should return a promise instead of doing it
-   * 			all inline.
-   * @param  {Object} state The state object to activate.
-   */
-  activate(state, params, states=[], views={}, data={}) {
-
-    if (state.parent) {
-      this.activate(state.parent, params, states, views, data);
-    }
-
-    states[state.name] = true;
-    if (state.is_active.get()) {
-      _merge(views, state.view_nodes);
-      _merge(data, state.active_data);
-      return;
-    };
-
-    let _views = {};
-    // FIXME recreate data !!
-
-    state.fn(_views, this.params, data);
-    state.view_nodes = _views;
-    state.active_data = data;
-    _merge(views, _views);
-  }
-
   _go(state, params = {}) {
     let activated = {};
 
     let new_views = {};
     let data = {};
-    this.activate(state, params, activated, new_views, data);
+    state.activate(this.params, activated, new_views, data);
 
     // NOTE if we got here, it means that the state change was validated.
 
