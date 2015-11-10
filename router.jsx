@@ -23,6 +23,7 @@ export class State {
 
     this.view_nodes = null;
     this.active_data = null;
+    this.virtual = false;
 
     this.is_active = o(false);
 
@@ -53,6 +54,7 @@ export class State {
   }
 
   getUrl(params = {}) {
+    if (this.virtual) throw new Error('Virtual states don\'t have urls.');
     let url = this.full_url;
     for (let p of this.param_names) {
       url = url.replace(`:${p}`, params[p]);
@@ -61,6 +63,8 @@ export class State {
   }
 
   match(url) {
+    if (this.virtual) return null;
+
     let matches = this.regexp.exec(url);
 
     // this state does not match the url.
@@ -129,6 +133,8 @@ export class Router {
     // Query is an observable, since we don't use it in routing.
     this.query = o(null);
     this.params = o({});
+
+    this.linked = false; // true if linked to location.
   }
 
   default(name, args) {
@@ -154,20 +160,25 @@ export class Router {
 
     let state = new State(name, url, fn, parent);
     this.states[name] = state;
+    return state;
+  }
+
+  virtualState(name, url, fn) {
+    this.state(name, url, fn).virtual = true;
   }
 
   setUrl(url) {
-    // 1. Find the state that matches with the url.
-    // use go();
-
     for (let name in this.states) {
       let st = this.states[name];
       let params = st.match(url);
       if (params) {
         this._go(st, params);
-        break;
+        return;
       }
     }
+
+    let defaults = this.default;
+    this.go(defaults.name, defaults.params);
   }
 
   _go(state, params = {}) {
@@ -205,10 +216,17 @@ export class Router {
   go(state_name, params = {}) {
     let state = this.states[state_name];
     if (!state) throw new Error('no such state');
-    this._go(this.states[state_name], params);
+    if (!this.linked) {
+      this._go(this.states[state_name], params);
+    } else {
+      let url = state.getUrl(params);
+      window.location.hash = '#' + url;
+    }
   }
 
   linkWithLocation() {
+    this.linked = true;
+    
     let change = (event) => {
       let hash = window.location.hash;
       this.setUrl(hash.split('?')[0].slice(1));
