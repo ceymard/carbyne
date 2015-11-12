@@ -9,23 +9,17 @@ export class BindController extends Controller {
     this.opts = opts;
   }
 
-  setNode(node) {
-    super(node);
-    node.on('mount', () => {
-      // We're calling bind on a classic HTML node.
-      let tag = node.element.tagName.toLowerCase();
-
-      // FIXME need to check if we're in editing mode of an HTML node (usually by checking its attributes)
-      if (tag === 'input') this.linkToInput();
-    });
+  onMount() {
+    let element = this.node.element;
+    let tag = element.tagName.toLowerCase();
+    if (tag === 'input') this.linkToInput(element);
   }
 
-  linkToInput() {
+  linkToInput(element) {
 
     let obs = this.obs;
     let opts = this.opts;
     let node = this.node;
-    let element = node.element;
 
     let cbk = (evt) => {
       let val = element.value;

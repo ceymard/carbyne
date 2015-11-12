@@ -4,7 +4,6 @@ export class Controller {
   constructor() {
 
     this.node = null;
-
   }
 
   destroy() {
@@ -14,6 +13,10 @@ export class Controller {
 
   setNode(node) {
     this.node = node;
+    if (this.onMount) node.on('mount', this.onMount.bind(this));
+    if (this.onUnmount) node.on('unmount', this.onUnmount.bind(this));
+    if (this.onRemove) node.on('remove', this.onRemove.bind(this));
+    if (this.onCreateDOM) node.on('create-dom', this.onCreateDOM.bind(this));
   }
 
 }

@@ -226,7 +226,7 @@ export class Router {
 
   linkWithLocation() {
     this.linked = true;
-    
+
     let change = (event) => {
       let hash = window.location.hash;
       this.setUrl(hash.split('?')[0].slice(1));
@@ -281,15 +281,11 @@ export class ViewController extends Controller {
     this.name = name;
   }
 
-  setNode(node) {
-    super(node);
-    this.unregister = null;
-    node.on('mount', (ev) => {
-      if (!this.router) {
-        let parent_ctrl = node.parent.getController(ViewController);
-        this.setRouter(parent_ctrl.router);
-      } else this.link();
-    });
+  onMount() {
+    if (!this.router) {
+      let parent_ctrl = this.node.parent.getController(ViewController);
+      this.setRouter(parent_ctrl.router);
+    } else this.link();
   }
 
   link() {
