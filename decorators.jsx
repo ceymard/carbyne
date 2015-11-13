@@ -63,5 +63,18 @@ export function transition(name = '') {
       node.element.classList.add(`${name}enter`);
       requestAnimationFrame(() => node.element.classList.remove(`${name}enter`));
     });
+
+    let orig_remove = node.removeFromDOM;
+    node.removeFromDOM = function removeFromDOMTransition() {
+      node.element.classList.add(`${name}leave`);
+      node.element.on('animationend', function() {
+        // effectively remove the element.
+        orig_remove.call(node);
+      });
+      node.element.on('transitionend', function() {
+        // effectively remove the element.
+        orig_remove.call(node);
+      });
+    }
   }
 }

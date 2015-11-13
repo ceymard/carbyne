@@ -199,6 +199,7 @@ export class HtmlNode {
     if (!this.element) this.createDOM();
     parent.insertBefore(this.element, before);
     this.trigger('mount', parent, before);
+    return this;
   }
 
   unmount() {
@@ -223,15 +224,20 @@ export class HtmlNode {
     if (idx > -1) this.children.splice(idx, 1);
   }
 
-  remove() {
-    // should check if we're already unmounted.
-    this.unmount();
+  removeFromDOM() {
     this.element.parentNode.removeChild(this.element);
     if (this.parent) {
       this.parent.removeChild(this);
       this.parent = null;
     }
     this.element = null;
+  }
+
+  remove() {
+    // should check if we're already unmounted.
+    this.unmount();
+    this.removeFromDOM();
+    this.trigger('remove');
   }
 
 }
@@ -261,6 +267,7 @@ export class VirtualNode extends HtmlNode {
     this.start_element = document.createComment(this.name + 'start');
     parent.insertBefore(this.start_element, this.element);
     this.trigger('mount', parent, before);
+    return this;
   }
 
   addHtmlNode(child) {
@@ -283,11 +290,14 @@ export class VirtualNode extends HtmlNode {
     }
   }
 
+  removeFromDOM() {
+    this.start_element.parentNode.removeChild(this.start_element);
+  }
+
   remove() {
     // Since the children are not children of a comment node, we need to manually
     // clean them up.
     this.removeChildren();
-    this.start_element.parentNode.removeChild(this.start_element);
     super();
   }
 
