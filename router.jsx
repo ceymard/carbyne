@@ -290,7 +290,10 @@ export class ViewController extends Controller {
 
   link() {
     if (this.node && this.router && this.node.element)
-      this.node.observe(this.router.computed_views.path(this.name), (v) => this.setContent(v));
+      this.node.observe(this.router.computed_views.path(this.name), (v) => {
+        if (v && typeof v !== 'function') throw new Error(`Views must be functions in '${this.name}'`);
+        this.setContent(v);
+      });
   }
 
   setContent(c) {

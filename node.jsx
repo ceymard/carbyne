@@ -205,8 +205,8 @@ export class HtmlNode {
 
     // Insert our element in the DOM.
     parent.insertBefore(this.element, before);
-    // This is to handle the case of virtual nodes.
     if (!this.tag) {
+      // This is to handle the case of virtual nodes.
       this.insertionParent = parent;
       this.insertionParent.insertBefore(this.insertionNode, before);
     } else {
@@ -331,63 +331,6 @@ export class VirtualNode extends HtmlNode {
     // the removal is between two comment nodes.
     this.name = 'Virtual Node';
   }
-
-  // /**
-  //  * The virtual node
-  //  */
-  // mount(parent, before) {
-  //   this.element = document.createComment(this.name + 'end');
-  //   parent.insertBefore(this.element, before);
-
-  //   // prev is used for debug purposes.
-  //   this.start_element = document.createComment(this.name + 'start');
-  //   parent.insertBefore(this.start_element, this.element);
-  //   this.trigger('mount', parent, before);
-  //   return this;
-  // }
-
-  // addHtmlNode(child) {
-  //   child.mount(this.element.parentNode, this.element);
-  // }
-
-  // addNode(child) {
-  //   this.element.parentNode.insertBefore(child, this.element);
-  //   this.dom_children.push(child);
-  // }
-
-  // removeChildren() {
-  //   let parent = this.element.parentNode;
-  //   for (let n of this.dom_children)
-  //     parent.removeChild(n);
-  //   this.dom_children = [];
-  //   let children = this.children;
-  //   while (this.children.length) {
-  //     children[0].remove();
-  //   }
-  // }
-
-  // detachChildren() {
-  //   let parent = this.element.parentNode;
-  //   for (let n of this.dom_children)
-  //     parent.removeChild(n);
-  //   this.dom_children = [];
-  //   let children = this.children;
-  //   while (this.children.length) {
-  //     children[0].detach();
-  //   }    
-  // }
-
-  // detach() {
-  //   this.element.parentNode.removeChild(this.element);
-  //   this.start_element.parentNode.removeChild(this.start_element);
-  // }
-
-  // remove() {
-  //   // Since the children are not children of a comment node, we need to manually
-  //   // clean them up.
-  //   this.removeChildren();
-  //   super();
-  // }
 
 }
 
