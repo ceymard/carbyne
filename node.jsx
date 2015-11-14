@@ -5,6 +5,26 @@ import {Observable, o} from './observable';
 let ident = 0;
 
 /**
+  Noteworthy events ;
+
+  This can only happen once.
+  before-create: Before DOM is created (when we want to eg. manipulate children list and attributes)
+  create: Right after DOM is created
+  ---
+  These can be called multiple times :
+  before-mount: Before DOM is to be inserted
+  mount: After DOM is inserted
+  ---
+  These can be called multiple times :
+  before-unmount: Before element is to be removed (can it be canceled ?)
+  unmount: After element is removed from DOM
+  ---
+  This can only happen once, mostly
+  before-remove: Before unloading the tree and calling the destroyers
+  remove: Right after that.
+ */
+
+/**
  * HtmlNode is a wrapper on nodes.
  */
 export class HtmlNode {
@@ -12,8 +32,7 @@ export class HtmlNode {
   /**
    * @param  {String} tag      The tag name. It always will be lowercase.
    * @param  {Object} attrs    Attributes to the node. Can include observables.
-   * @param  {[type]} children [description]
-   * @return {[type]}          [description]
+   * @param  {Array} children  The list of children.
    */
   constructor(tag = null, attrs, children = []) {
     this.tag = tag;
@@ -46,7 +65,12 @@ export class HtmlNode {
 
   trigger(event, ...args) {
     if (typeof event === 'string')
-      event = {type: event, target: this, propagate: true, stopPropagation() { this.propagate = false; }};
+      event = {
+        type: event, 
+        target: this, 
+        prevent_default: false,
+        preventDefault() { this.prevent_default = true; }
+    };
     let listeners = this.listeners[event.type] || {};
 
     for (let id in listeners)
@@ -55,12 +79,14 @@ export class HtmlNode {
     return this;
   }
 
+  /**
+   * Convenience method to tie the observation of an observable
+   * to the life cycle of a node.
+   */
   observe(obs, cbk) {
-    // This is to make sure that the callback is not fired anymore
-    // after this component is unbound.
     if (obs instanceof Observable) {
       let unregister = obs.addObserver(cbk)
-      this.on('unmount', unregister);
+      this.on('remove', unregister);
     } else
       // Fire immediately if this is not an observable.
       cbk(obs);
@@ -90,18 +116,15 @@ export class HtmlNode {
     while (node) {
       for (let ctrl of node.controllers) {
         if (ctrl instanceof cls) {
-          if (all)
-            res.push(ctrl);
-          else
-            return ctrl;
+          return ctrl;
         }
       }
 
-      if (!recursive) return res;
+      if (!recursive) return null;
       node = node.parent;
     }
 
-    return res;
+    return null;
 
   }
 
@@ -122,6 +145,8 @@ export class HtmlNode {
 
   createDOM() {
     let elt = null;
+
+    this.trigger('before-create');
 
     if (this.tag) {
       elt = this.createElement(this.tag);
@@ -152,7 +177,7 @@ export class HtmlNode {
 
     // The created event will allow the decorators to do some set up on the dom
     // like binding events, attributes, ...
-    this.trigger('dom-created');
+    this.trigger('create');
   }
 
   addHtmlNode(child) {
@@ -196,6 +221,7 @@ export class HtmlNode {
    *                       then the current node is appended to the parent.
    */
   mount(parent, before = null) {
+    this.trigger('before-mount', parent, before);
     if (!this.element) this.createDOM();
     parent.insertBefore(this.element, before);
     this.trigger('mount', parent, before);
@@ -205,6 +231,8 @@ export class HtmlNode {
   unmount() {
     // Unmount is recursive and tells all children to remove themselves.
     if (this._unmounted) return;
+
+    this.trigger('before-unmount');
 
     // This should be preventable in the event.
     this.trigger('unmount');
@@ -216,6 +244,7 @@ export class HtmlNode {
       ctrl.destroy();
 
     this._unmonted = true;
+    this.trigger('unmount');
   }
 
   removeChild(child) {

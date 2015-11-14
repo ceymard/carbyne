@@ -171,7 +171,7 @@ export function click(fn) {
 
   return function (node) {
 
-    node.on('dom-created', function () {
+    node.on('create', function () {
 
       // FIXME disabled
       var clickHandler = fn, //! was $parse attr.ngClick

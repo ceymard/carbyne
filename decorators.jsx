@@ -18,7 +18,7 @@ export function click(cbk) {
 
     return function clickDecorator(node) {
 
-      node.once('dom-created', function () {
+      node.once('create', function () {
         this.element.addEventListener('click', cbk.bind(node));
       });
 
@@ -31,7 +31,7 @@ export function cls(obj) {
 
   return function clsDecorator(node) {
 
-    node.once('dom-created', function () {
+    node.once('create', function () {
       let clslist = this.element.classList;
 
       for (let cls in obj) {
@@ -59,7 +59,7 @@ export function transition(name = '') {
   if (name) name = `${name}-`;
 
   return function transitionDecorator(node) {
-    node.on('dom-created', function () {
+    node.on('create', function () {
       node.element.classList.add(`${name}enter`);
       requestAnimationFrame(() => node.element.classList.remove(`${name}enter`));
     });
