@@ -294,7 +294,7 @@ export class ViewController extends Controller {
   }
 
   setContent(c) {
-    this.node.removeChildren();
+    this.node.empty(); // detach the children, remove the children.
     this.node.append(c);
   }
 
@@ -311,7 +311,6 @@ export class ViewController extends Controller {
 export function View(attrs, children) {
 
   let vctrl = new ViewController(attrs.name);
-
 
   let node = new ViewNode(attrs.name);
   node.addController(vctrl);

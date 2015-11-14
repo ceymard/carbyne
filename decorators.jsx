@@ -55,6 +55,11 @@ export function ctrl(...ctrls) {
   }
 }
 
+
+/**
+ * FIXME should detect computed properties to tell if we're having to handle
+ * animations or not. Should we check for prefixed vendor events also ?
+ */
 export function transition(name = '') {
   if (name) name = `${name}-`;
 

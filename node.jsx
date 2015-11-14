@@ -37,9 +37,17 @@ export class HtmlNode {
   constructor(tag = null, attrs, children = []) {
     this.tag = tag;
     this.attrs = attrs;
-    this.children = children;
+    this.initial_children = children;
+    this.children = [];
     this.listeners = {};
     this.controllers = [];
+
+    // Used for DOM insertions.
+    this.element = null;
+    this.parentNode = null;
+    // used as a `before` argument, useful when dealing with virtual nodes.
+    this.insertionNode = null;
+    this.insertionParent = null;
   }
 
   /////////////////////////////////////////////////////////////////
@@ -151,6 +159,7 @@ export class HtmlNode {
     if (this.tag) {
       elt = this.createElement(this.tag);
       this.element = elt;
+      this.insertionParent = this.element;
 
       let attrs = this.attrs;
       for (let name in attrs) {
@@ -165,14 +174,15 @@ export class HtmlNode {
         }
       }
 
-      let children = this.children;
-      // We're replacing children with only the components.
-      this.children = [];
+      let children = this.initial_children;
+      // We'll not be using them anymore.
+      this.initial_children = null;
       for (let c of children) {
         this.append(c);
       }
     } else {
       this.element = document.createComment('!');
+      this.insertionNode = document.createComment('!!');
     }
 
     // The created event will allow the decorators to do some set up on the dom
@@ -180,12 +190,33 @@ export class HtmlNode {
     this.trigger('create');
   }
 
-  addHtmlNode(child) {
-    child.mount(this.element);
-  }
+  /**
+   * Mount the node onto the DOM.
+   * @param  {Node} parent The parent DOM node.
+   * @param  {Node} before An optionnal element before which to add it. If null,
+   *                       then the current node is appended to the parent.
+   */
+  mount(parent, before = null) {
+    this.trigger('before-mount', parent, before);
 
-  addNode(child) {
-    this.element.appendChild(child);
+    this.parentNode = parent;
+
+    if (!this.element) this.createDOM();
+
+    // Insert our element in the DOM.
+    parent.insertBefore(this.element, before);
+    // This is to handle the case of virtual nodes.
+    if (!this.tag) {
+      this.insertionParent = parent;
+      this.insertionParent.insertBefore(this.insertionNode, before);
+    } else {
+      this.insertionParent = this.element;
+      this.insertionNode = before;
+    }
+
+    this._unmounted = false;
+    this.trigger('mount', parent, before);
+    return this;
   }
 
   append(child) {
@@ -202,30 +233,18 @@ export class HtmlNode {
       // FIXME should probably do something with DOM fragments here since they allow reflow minimization.
       for (let c of child) this.append(c);
     } else if (child instanceof Node) {
-      this.addNode(child);
+      this.children.push(child);
+      this.insertionParent.insertBefore(child, this.insertionNode);
     } else if (child instanceof HtmlNode) {
       this.children.push(child);
       child.parent = this;
-      this.addHtmlNode(child);
+      child.mount(this.insertionParent, this.insertionNode);
     } else {
-      let domnode = document.createTextNode(forceString(child));
-      this.addNode(domnode);
+      child = document.createTextNode(forceString(child));
+      this.children.push(child);
+      this.insertionParent.insertBefore(child, this.insertionNode);
     }
 
-  }
-
-  /**
-   * Mount the node onto the DOM.
-   * @param  {Node} parent The parent DOM node.
-   * @param  {Node} before An optionnal element before which to add it. If null,
-   *                       then the current node is appended to the parent.
-   */
-  mount(parent, before = null) {
-    this.trigger('before-mount', parent, before);
-    if (!this.element) this.createDOM();
-    parent.insertBefore(this.element, before);
-    this.trigger('mount', parent, before);
-    return this;
   }
 
   unmount() {
@@ -234,39 +253,68 @@ export class HtmlNode {
 
     this.trigger('before-unmount');
 
-    // This should be preventable in the event.
-    this.trigger('unmount');
+    this.parentNode.removeChild(this.element);
 
-    for (let c of this.children)
-      c.unmount();
-
-    for (let ctrl of this.controllers)
-      ctrl.destroy();
+    // Case for virtual nodes that need to unmount.
+    if (this.insertionParent === this.parentNode) {
+      this.empty(true);
+      this.parentNode.removeChild(this.insertionNode);
+    }
 
     this._unmonted = true;
     this.trigger('unmount');
+
+    return this;
   }
 
   removeChild(child) {
     // This does not remove element from the DOM !
+    // But maybe it should...
     let idx = this.children.indexOf(child);
     if (idx > -1) this.children.splice(idx, 1);
   }
 
-  removeFromDOM() {
-    this.element.parentNode.removeChild(this.element);
-    if (this.parent) {
-      this.parent.removeChild(this);
-      this.parent = null;
-    }
+  remove() {
+    this.trigger('before-remove');
+
+    // should check if we're already unmounted.
+
+    // This is probably here that we should also destroy
+    // the children.
+
+    this.unmount();
+
+    this.parentNode = null;
+    this.insertionParent = null;
+    this.insertionNode = null;
     this.element = null;
+
+    // FIXME unload everything.
+
+    this.trigger('remove');
   }
 
-  remove() {
-    // should check if we're already unmounted.
-    this.unmount();
-    this.removeFromDOM();
-    this.trigger('remove');
+  /**
+   * Detaches all children or removes them.
+   */
+  empty(detach = false) {
+    // copy the children array as it will get modified by unmount()
+    let children = this.children.slice(0);
+
+    if (detach) {
+      for (let c of children) {
+        if (c instanceof Node) {
+          this.parentNode.removeChild(c);
+        } else c.unmount();
+      }
+    } else {
+      for (let c of children) {
+        if (c instanceof Node) {
+          this.parentNode.removeChild(c);
+        } else c.remove();
+      }
+    }
+    this.children = [];
   }
 
 }
@@ -281,54 +329,65 @@ export class VirtualNode extends HtmlNode {
     super(null, {}, []);
     // We have to track manually the DOM children that we insert, since
     // the removal is between two comment nodes.
-    this.dom_children = [];
     this.name = 'Virtual Node';
   }
 
-  /**
-   * The virtual node
-   */
-  mount(parent, before) {
-    this.element = document.createComment(this.name + 'end');
-    parent.insertBefore(this.element, before);
+  // /**
+  //  * The virtual node
+  //  */
+  // mount(parent, before) {
+  //   this.element = document.createComment(this.name + 'end');
+  //   parent.insertBefore(this.element, before);
 
-    // prev is used for debug purposes.
-    this.start_element = document.createComment(this.name + 'start');
-    parent.insertBefore(this.start_element, this.element);
-    this.trigger('mount', parent, before);
-    return this;
-  }
+  //   // prev is used for debug purposes.
+  //   this.start_element = document.createComment(this.name + 'start');
+  //   parent.insertBefore(this.start_element, this.element);
+  //   this.trigger('mount', parent, before);
+  //   return this;
+  // }
 
-  addHtmlNode(child) {
-    child.mount(this.element.parentNode, this.element);
-  }
+  // addHtmlNode(child) {
+  //   child.mount(this.element.parentNode, this.element);
+  // }
 
-  addNode(child) {
-    this.element.parentNode.insertBefore(child, this.element);
-    this.dom_children.push(child);
-  }
+  // addNode(child) {
+  //   this.element.parentNode.insertBefore(child, this.element);
+  //   this.dom_children.push(child);
+  // }
 
-  removeChildren() {
-    let parent = this.element.parentNode;
-    for (let n of this.dom_children)
-      parent.removeChild(n);
-    this.dom_children = [];
-    let children = this.children;
-    while (this.children.length) {
-      children[0].remove();
-    }
-  }
+  // removeChildren() {
+  //   let parent = this.element.parentNode;
+  //   for (let n of this.dom_children)
+  //     parent.removeChild(n);
+  //   this.dom_children = [];
+  //   let children = this.children;
+  //   while (this.children.length) {
+  //     children[0].remove();
+  //   }
+  // }
 
-  removeFromDOM() {
-    this.start_element.parentNode.removeChild(this.start_element);
-  }
+  // detachChildren() {
+  //   let parent = this.element.parentNode;
+  //   for (let n of this.dom_children)
+  //     parent.removeChild(n);
+  //   this.dom_children = [];
+  //   let children = this.children;
+  //   while (this.children.length) {
+  //     children[0].detach();
+  //   }    
+  // }
 
-  remove() {
-    // Since the children are not children of a comment node, we need to manually
-    // clean them up.
-    this.removeChildren();
-    super();
-  }
+  // detach() {
+  //   this.element.parentNode.removeChild(this.element);
+  //   this.start_element.parentNode.removeChild(this.start_element);
+  // }
+
+  // remove() {
+  //   // Since the children are not children of a comment node, we need to manually
+  //   // clean them up.
+  //   this.removeChildren();
+  //   super();
+  // }
 
 }
 
@@ -360,11 +419,12 @@ export class ObservableNode extends VirtualNode {
         // Small optimization in the case that we just have to modify a text node
         // to avoid removing and adding Nodes around by reusing the last one we
         // were using.
-        this.dom_children[0].textContent = forceString(value);
+        this.children[0].textContent = forceString(value);
         return;
       }
 
-      this.removeChildren();
+      // this.removeChildren();
+      this.empty(); // remove all children.
       this.append(value);
       this.last_was_text = is_text;
     });
