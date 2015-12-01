@@ -52,6 +52,22 @@ export class HtmlNode {
 
   /////////////////////////////////////////////////////////////////
 
+  _mkEvent(event) {
+    if (typeof event === 'string')
+      return {
+        type: event,
+        target: this,
+        prevent_default: false,
+        preventDefault() { this.prevent_default = true; },
+        propagating: true,
+        stopPropagation() { this.propagating = false; },
+    };
+    let e = {};
+    for (let x in event)
+      e[x] = event[x];
+    return e;
+  }
+
   on(name, fn) {
     if (!(name in this.listeners)) this.listeners[name] = {};
     fn.$$ident = ident++;
@@ -71,14 +87,24 @@ export class HtmlNode {
     this.on(name, cbk);
   }
 
+  emit(event, ...args) {
+    event = this._mkEvent(event);
+    this.trigger(event, ...args);
+    if (this.parent && event.propagating)
+      this.parent.emit(event, ...args);
+  }
+
+  broadcast(event, ...args) {
+    event = this._mkEvent(event);
+    this.trigger(event, ...args);
+    if (!event.propagating) return;
+    for (let c of this.children) {
+      if (c instanceof HtmlNode) c.broadcast(event, ...args);
+    }
+  }
+
   trigger(event, ...args) {
-    if (typeof event === 'string')
-      event = {
-        type: event, 
-        target: this, 
-        prevent_default: false,
-        preventDefault() { this.prevent_default = true; }
-    };
+    event = this._mkEvent(event);
     let listeners = this.listeners[event.type] || {};
 
     for (let id in listeners)
@@ -248,7 +274,6 @@ export class HtmlNode {
   }
 
   unmount() {
-    // Unmount is recursive and tells all children to remove themselves.
     if (this._unmounted) return;
 
     this.trigger('before-unmount');
@@ -263,6 +288,8 @@ export class HtmlNode {
 
     this._unmonted = true;
     this.trigger('unmount');
+    this.parentNode = null;
+    this.insertionParent = null;
 
     return this;
   }
@@ -289,9 +316,8 @@ export class HtmlNode {
     this.insertionNode = null;
     this.element = null;
 
-    // FIXME unload everything.
-
-    this.trigger('remove');
+    // remove is sent to everyone, including children.
+    this.broadcast('remove');
   }
 
   /**
