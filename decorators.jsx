@@ -64,7 +64,7 @@ export function transition(name = '') {
   if (name) name = `${name}-`;
 
   return function transitionDecorator(node) {
-    node.on('create', function () {
+    node.on('mount', function () {
       node.element.classList.add(`${name}enter`);
       requestAnimationFrame(() => node.element.classList.remove(`${name}enter`));
     });

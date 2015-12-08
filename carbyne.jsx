@@ -2,7 +2,7 @@
 import {bind, click, cls, transition, ctrl} from './decorators';
 import {Controller} from './controller';
 import {o, Observable} from './observable';
-import {HtmlNode, VirtualNode} from './node';
+import {HtmlNode, VirtualNode, ObservableNode} from './node';
 import {Router, View} from './router';
 
 
@@ -66,7 +66,7 @@ function Fragment(attrs, children) {
   return children;
 }
 
-module.exports = {c, o, Observable, HtmlNode, VirtualNode,
+module.exports = {c, o, Observable, HtmlNode, VirtualNode, ObservableNode,
   Controller,
   bind, click, cls, transition, ctrl,
   Fragment,

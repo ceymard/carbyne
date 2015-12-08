@@ -1,4 +1,8 @@
 
+export function noop() { }
+
+export function identity() { }
+
 export function path(obj, pth, value) {
 
 }

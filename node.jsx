@@ -1,5 +1,5 @@
 
-import {forceString} from './helpers';
+import {identity, forceString} from './helpers';
 import {Observable, o} from './observable';
 
 let ident = 0;
@@ -118,6 +118,7 @@ export class HtmlNode {
    * to the life cycle of a node.
    */
   observe(obs, cbk) {
+    cbk = cbk || identity;
     if (obs instanceof Observable) {
       let unregister = obs.addObserver(cbk)
       this.on('remove', unregister);

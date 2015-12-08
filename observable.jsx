@@ -142,13 +142,12 @@ export class DependentObservable extends Observable {
     this.fnget = fnget;
     this.unloaders = [];
     this.args = [];
-    this.missing = 0;
+    this.missing = deps.length;
 
     for (let dep of deps) {
       if (dep instanceof Observable) {
         let index = this.args.length;
         let resolved = false;
-        this.missing++;
         this.args.push(undefined);
         this.unloaders.push(dep.addObserver((v) => {
           if (!resolved) {

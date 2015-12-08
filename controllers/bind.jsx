@@ -13,6 +13,24 @@ export class BindController extends Controller {
     let element = this.node.element;
     let tag = element.tagName.toLowerCase();
     if (tag === 'input') this.linkToInput(element);
+    if (tag === 'select') this.linkToSelect(element);
+  }
+
+  linkToSelect(element) {
+    let obs = this.obs;
+    let opts = this.opts;
+    let node = this.node;
+
+    element.addEventListener('change', function (evt) {
+      // console.log(evt);
+      // console.log(this.value);
+      // this.value = 'gka';
+      obs.set(this.value);
+    });
+
+    node.observe(obs, (val) => {
+      element.value = val;
+    });
   }
 
   linkToInput(element) {
