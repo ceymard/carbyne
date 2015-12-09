@@ -1,30 +1,10 @@
 
-export function pathget(obj, path) {
-  path = path.split('.');
-  for (let p of path) {
-    if (!obj) break;
-    obj = obj[p];
-  }
-  return obj;
-}
-
-
-export function pathset(obj, path, value) {
-  path = path.split('.');
-  let last = path.pop();
-  for (let p of path) {
-    // create objects as we need it.
-    if (!obj[p]) obj[p] = {};
-    obj = obj[p];
-  }
-  obj[last] = value;
-}
-
+const {pathget, pathset} = require('./helpers');
 
 export class Observable {
 
   constructor(value) {
-    this.listeners = [];
+    this.observers = [];
     this._destroyed = false;
 
     this._value = undefined;
@@ -32,7 +12,8 @@ export class Observable {
   }
 
   /**
-   * Get the value of the observable.
+   * Get the current value of the observable.
+   * @returns {Any} The current value
    */
   get() {
     return this._value;
@@ -46,19 +27,33 @@ export class Observable {
     // No need to change.
     if (!force && this._value === value) return;
 
+    const old_value = this._value;
     this._value = value;
 
     // No need to trigger if no one is listening to us.
-    if (this.listeners.length === 0) return;
+    if (this.observers.length === 0) return;
 
-    for (let l of this.listeners) {
-      // console.log(value);
-      l(value);
+    for (let l of this.observers) {
+      l(value, old_value);
     }
 
     return this;
   }
 
+  /**
+   *  Add an observer function that will be called whenever
+   *  the value of the observer changes (not whenever `set()` is
+   *  called!)
+   *
+   *  Note: Most of the time, when using observers in conjunction
+   *  with Nodes, prefer using `Node#observe` as the observer are
+   *  then tied to the life of the node ; whenever it is destroyed,
+   *  all the associated observers are unsubscribed 
+   * 
+   * @param {Function} fn A callback function called with the new value
+   *                      as its argument and the old one as the second
+   *                      argument.
+   */
   addObserver(fn) {
 
     // listeners are always given the current value if it is available upon subscribing.
@@ -68,20 +63,20 @@ export class Observable {
 
     if (this._destroyed) return;
 
-    this.listeners.push(fn);
+    this.observers.push(fn);
 
-    return this.removeListener.bind(this, fn);
+    return this.removeObserver.bind(this, fn);
   }
 
-  removeListener(fn) {
-    let idx = this.listeners.indexOf(fn);
-    if (idx > -1) this.listeners.splice(idx, 1);
+  removeObserver(fn) {
+    let idx = this.observers.indexOf(fn);
+    if (idx > -1) this.observers.splice(idx, 1);
   }
 
   // This Observable will never update anyone again.
   destroy() {
     this._destroyed = true;
-    this.listeners = [];
+    this.observers = [];
   }
 
   /**
@@ -180,9 +175,9 @@ export class DependentObservable extends Observable {
     }
   }
 
-  removeListener(fn) {
+  removeObserver(fn) {
     super(fn);
-    if (this.listeners.length === 0) {
+    if (this.observers.length === 0) {
       for (let d of this.unloaders) d(); // unregister all the dependencies.
     }
   }
