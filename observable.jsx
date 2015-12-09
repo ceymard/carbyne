@@ -15,26 +15,43 @@ export class Observable {
    * Get the current value of the observable.
    * @returns {Any} The current value
    */
-  get() {
+  get(path) {
+    if (path) return pathget(this._value, path);
     return this._value;
   }
 
-  set(value, force = false) {
-    // FIXME need to check if the value is a promise or an observable.
+  set(path, value) {
+    
+    // path is optional.
+    if (arguments.length === 1) {
+      value = path;
+      path = undefined;
+    }
 
+    // Is there a sense in this ?
     if (value instanceof Observable) value = value.get();
 
-    // No need to change.
-    if (!force && this._value === value) return;
+    if (path !== undefined) {
+      const old_value = pathget(this._value, path);
 
-    const old_value = this._value;
-    this._value = value;
+      // Do nothing if the value does not change.
+      if (value === old_value) return;
+
+      pathset(this._value, path, value);
+
+    } else {
+      const old_value = this._value;
+      // No need to change.
+      if (value === old_value) return;
+      this._value = value;
+    }
 
     // No need to trigger if no one is listening to us.
     if (this.observers.length === 0) return;
 
+    const current_value = this._value;
     for (let l of this.observers) {
-      l(value, old_value);
+      l(current_value);
     }
 
     return this;
@@ -51,8 +68,7 @@ export class Observable {
    *  all the associated observers are unsubscribed 
    * 
    * @param {Function} fn A callback function called with the new value
-   *                      as its argument and the old one as the second
-   *                      argument.
+   *                      as its argument.
    */
   addObserver(fn) {
 
@@ -102,14 +118,14 @@ export class Observable {
    */
   path(path, oneway = false) {
 
-    // FIXME this is not implemented !
-    let o = new Observable(null);
-    let unload = this.addObserver((v) => o.set(pathget(this._value, path)));
+    const o = new Observable(null);
+    // FIXME there should probably be somewhere something that unregisters
+    const unload = this.addObserver((v) => o.set(pathget(this._value, path)));
+
     if (!oneway) {
-      let unload2 = o.addObserver((v) => {
+      const unload2 = o.addObserver((v) => {
         // Set path of original object.
-        pathset(this._value, path, v);
-        this.set(this._value, true);
+        this.set(path, v);
       });
     }
     return o;
