@@ -101,8 +101,23 @@ export class Observable {
    * @param  {function} fnget The function that gets the value back into the current observable.
    * @return {Observable}  The observable object that results.
    */
-  transform(fnget) {
-    return new DependentObservable([this], fnget);
+  transform(path, fnget, fnset) {
+    let obs = this;
+
+    if (typeof path === 'string') {
+      // DEBUG
+      obs = this.path(path);
+    } else {
+      fnget = path;
+      fnset = fnget;
+      path = undefined;
+    }
+    // DEBUG
+    if (typeof fnget !== 'function') throw new Error('fnget must be a function');
+
+    // FIXME we need a new class like BoundObservable that would be used
+    // for path() as well as transform.
+    return new DependentObservable([obs], fnget);
   }
 
   /**
