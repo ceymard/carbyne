@@ -102,22 +102,6 @@ export class Observable {
    * @return {Observable}  The observable object that results.
    */
   transform(path, fnget, fnset) {
-    // let obs = this;
-
-    // if (typeof path === 'string') {
-    //   obs = this.path(path);
-    // } else {
-    //   fnget = path;
-    //   fnset = fnget;
-    //   path = undefined;
-    // }
-    // // DEBUG
-    // if (typeof fnget !== 'function') throw new Error('fnget must be a function');
-
-    // // FIXME we need a new class like BoundObservable that would be used
-    // // for path() as well as transform.
-    // return new DependentObservable([obs], fnget);
-
     if (typeof path === 'function') { // there is no path.
       fnset = fnget;
       fnget = path;
@@ -139,24 +123,7 @@ export class Observable {
    * @return {DependentObservable} The resulting observable.
    */
   path(path) {
-
-    // const o = new Observable(null);
-    // // FIXME there should probably be somewhere something that unregisters
-    // const unload = this.addObserver((v) => o.set(pathget(this._value, path)));
-
-    // if (!oneway) {
-    //   const unload2 = o.addObserver((v) => {
-    //     // Set path of original object.
-    //     this.set(path, v);
-    //   });
-    // }
-    // return o;
-
     return new LinkedObservable(this, path, identity, identity);
-  }
-
-  readOnly(path) {
-    return new LinkedObservable(this, path, identity, null);
   }
 
 }
