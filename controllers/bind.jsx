@@ -39,9 +39,15 @@ export class BindController extends Controller {
     let opts = this.opts;
     let node = this.node;
 
+    const convert = (val) => {
+      if (type === 'number')
+        return parseInt(val);
+      return val;
+    }
+
     let cbk = (evt) => {
       let val = element.value;
-      obs.set(val);
+      obs.set(type === 'number' ? parseInt(val) : val);
     }
 
     let type = element.type.toLowerCase() || 'text';
@@ -53,6 +59,7 @@ export class BindController extends Controller {
       case 'datetime':
       case 'week':
       case 'month':
+      case 'time':
       case 'datetime-local':
         node.observe(obs, (val) => element.value = val);
         element.addEventListener('input', cbk);
