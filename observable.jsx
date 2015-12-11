@@ -28,6 +28,8 @@ export class Observable {
       path = undefined;
     }
 
+    let update = true;
+
     // Is there a sense in this ?
     if (value instanceof Observable) value = value.get();
 
@@ -35,15 +37,18 @@ export class Observable {
       const old_value = pathget(this._value, path);
 
       // Do nothing if the value does not change.
-      if (value === old_value) return;
-
-      pathset(this._value, path, value);
+      if (value === old_value)
+        update = false;
+      else
+        pathset(this._value, path, value);
 
     } else {
       const old_value = this._value;
       // No need to change.
-      if (value === old_value) return;
-      this._value = value;
+      if (value === old_value)
+        update = false;
+      else
+        this._value = value;
     }
 
     // No need to trigger if no one is listening to us.
@@ -51,7 +56,8 @@ export class Observable {
 
     const current_value = this._value;
     for (let l of this.observers) {
-      l(current_value);
+      if (update || l.linked)
+        l(current_value);
     }
 
     return this;
@@ -142,15 +148,20 @@ export class LinkedObservable extends Observable {
     this.obs = obs;
     this.fnget = fnget;
     this.fnset = fnset;
-    this.path = path;
+    this._path = path;
 
     this._unregister = null;
+    this._update_fn = (v) => this._set(v);
+    // This observer has a linked attribute, which
+    // means that it should be called regardless of
+    // if the parent value changed.
+    this._update_fn.linked = true;
   }
 
   // Method to be called when the value changes
   // in the parent observable.
   _set(value) {
-    const pth = this.path;
+    const pth = this._path;
     if (pth) value = pathget(value, pth);
     super.set(this.fnget(value));
   }
@@ -163,8 +174,8 @@ export class LinkedObservable extends Observable {
 
     if (this.fnset) {
       let pth = []
-      if (this.path) pth.push(this.path);
-      if (path) pth.push(this.path);
+      if (this._path) pth.push(this._path);
+      if (path) pth.push(path);
       pth = pth.join('.');
       if (pth.length === 0) this.obs.set(this.fnset(value));
       else this.obs.set(pth, this.fnset(value));
@@ -174,9 +185,7 @@ export class LinkedObservable extends Observable {
   addObserver() {
     // If there was no one listening, then set up the observer.
     if (this.observers.length === 0)
-      this._unregister = this.obs.addObserver((v) => {
-        this._set(v);
-      });
+      this._unregister = this.obs.addObserver(this._update_fn);
     return super(...arguments);
   }
 
@@ -227,6 +236,7 @@ export class DependentObservable extends Observable {
           this._set();
         }));
       } else {
+        this.missing--;
         this.args.push(dep);
       }
     }
@@ -295,7 +305,7 @@ export function o(...args) {
 
   // If there is no observer, directly return the result of applying the function
   // with its arguments.
-  if (!has_obs) return fn.apply(this, deps);
+  // if (!has_obs) return fn.apply(this, deps);
 
   let res = new DependentObservable(
     deps,

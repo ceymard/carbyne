@@ -1,5 +1,6 @@
 
-import {BindController} from './controllers/bind';
+const {BindController} = require('./controllers/bind');
+const {Observable} = require('./observable');
 
 export function bind(obs, opts) {
 
@@ -27,19 +28,31 @@ export function click(cbk) {
 
 }
 
-export function cls(obj) {
+export function cls(...args) {
 
   return function clsDecorator(node) {
 
     node.once('create', function () {
       let clslist = this.element.classList;
 
-      for (let cls in obj) {
-        let obs = obj[cls];
-        node.observe(obs, (val) => {
-          if (val) clslist.add(cls);
-          else clslist.remove(cls);
-        });
+      for (let obj of args) {
+        if (typeof obj === 'string') {
+          clslist.add(obj);
+        } else if (obj instanceof Observable) {
+          node.observe(obj, ((prev) => (val) => {
+            if (prev) clslist.remove(prev);
+            clslist.add(val);
+            prev = val;
+          })(null));
+        } else {
+          for (let cls in obj) {
+            let obs = obj[cls];
+            node.observe(obs, (val) => {
+              if (val) clslist.add(cls);
+              else clslist.remove(cls);
+            });
+          }
+        }
       }
     });
 

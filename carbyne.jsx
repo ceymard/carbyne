@@ -4,6 +4,7 @@ import {Controller} from './controller';
 import {o, Observable} from './observable';
 import {HtmlNode, VirtualNode, ObservableNode} from './node';
 import {Router, View} from './router';
+var {pathget, pathset} = require('./helpers');
 
 
 function c(elt, attrs, ...children) {
@@ -70,5 +71,6 @@ module.exports = {c, o, Observable, HtmlNode, VirtualNode, ObservableNode,
   Controller,
   bind, click, cls, transition, ctrl,
   Fragment,
-  Router, View
+  Router, View,
+  pathget, pathset
 };
