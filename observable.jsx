@@ -5,6 +5,7 @@ export class Observable {
 
   constructor(value) {
     this.observers = [];
+    this.stalkers = [];
     this._destroyed = false;
 
     this._value = undefined;
@@ -28,36 +29,29 @@ export class Observable {
       path = undefined;
     }
 
-    let update = true;
+    let update = false;
 
     // Is there a sense in this ?
     if (value instanceof Observable) value = value.get();
 
     if (path !== undefined) {
-      const old_value = pathget(this._value, path);
-
-      // Do nothing if the value does not change.
-      if (value === old_value)
-        update = false;
-      else
-        pathset(this._value, path, value);
-
+      pathset(this._value, path, value);
     } else {
       const old_value = this._value;
-      // No need to change.
-      if (value === old_value)
-        update = false;
-      else
-        this._value = value;
+
+      this._value = value;
+      update = value !== old_value;
     }
 
-    // No need to trigger if no one is listening to us.
-    if (this.observers.length === 0) return;
-
     const current_value = this._value;
-    for (let l of this.observers) {
-      if (update || l.linked)
-        l(current_value);
+
+    if (update) {
+      for (let fn of this.observers)
+        fn(current_value);
+    }
+
+    for (let fn of this.stalkers) {
+      fn(current_value);
     }
 
     return this;
@@ -76,7 +70,7 @@ export class Observable {
    * @param {Function} fn A callback function called with the new value
    *                      as its argument.
    */
-  addObserver(fn) {
+  addObserver(fn, all_changes = false) {
 
     // listeners are always given the current value if it is available upon subscribing.
     if (this.hasOwnProperty('_value')) {
@@ -85,14 +79,23 @@ export class Observable {
 
     if (this._destroyed) return;
 
-    this.observers.push(fn);
+    if (all_changes) {
+      this.stalkers.push(fn);
+    } else {
+      this.observers.push(fn);
+    }
 
-    return this.removeObserver.bind(this, fn);
+    return this.removeObserver.bind(this, fn, all_changes);
   }
 
-  removeObserver(fn) {
-    let idx = this.observers.indexOf(fn);
-    if (idx > -1) this.observers.splice(idx, 1);
+  removeObserver(fn, all_changes = false) {
+    if (all_changes) {
+      let idx = this.stalkers.indexOf(fn);
+      if (idx > -1) this.stalkers.splice(idx, 1);
+    } else {
+      let idx = this.observers.indexOf(fn);
+      if (idx > -1) this.observers.splice(idx, 1);
+    }
   }
 
   // This Observable will never update anyone again.
@@ -151,11 +154,6 @@ export class LinkedObservable extends Observable {
     this._path = path;
 
     this._unregister = null;
-    this._update_fn = (v) => this._set(v);
-    // This observer has a linked attribute, which
-    // means that it should be called regardless of
-    // if the parent value changed.
-    this._update_fn.linked = true;
   }
 
   // Method to be called when the value changes
@@ -185,7 +183,7 @@ export class LinkedObservable extends Observable {
   addObserver() {
     // If there was no one listening, then set up the observer.
     if (this.observers.length === 0)
-      this._unregister = this.obs.addObserver(this._update_fn);
+      this._unregister = this.obs.addObserver((v) => this._set(v), true);
     return super(...arguments);
   }
 
