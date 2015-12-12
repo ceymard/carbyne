@@ -1,7 +1,7 @@
 
 import {o} from './observable';
 import {Controller} from './controller';
-import {VirtualAtom} from './atom';
+import {Atom} from './atom';
 
 function _merge(o1, o2) {
   for (let name in o2) o1[name] = o2[name];
@@ -21,7 +21,7 @@ export class State {
     this.param_names = [];
     this.regexp = null;
 
-    this.view_nodes = null;
+    this.view_functions = null;
     this.active_data = null;
     this.virtual = false;
 
@@ -32,7 +32,7 @@ export class State {
 
   deactivate() {
     this.is_active.set(false);
-    this.view_nodes = null;
+    this.view_functions = null;
     this.active_data = null;
   }
 
@@ -93,7 +93,7 @@ export class State {
 
     activated[this.name] = true;
     if (this.is_active.get()) {
-      _merge(views, this.view_nodes);
+      _merge(views, this.view_functions);
       _merge(data, this.active_data);
       return;
     };
@@ -102,7 +102,7 @@ export class State {
     // FIXME recreate data !!
 
     this.fn(_views, params, data);
-    this.view_nodes = _views;
+    this.view_functions = _views;
     this.active_data = data;
     _merge(views, _views);
   }
@@ -119,7 +119,7 @@ export class Router {
   constructor() {
     this.states = {};
 
-    this.view_nodes = {};
+    this.view_functions = {};
     this.computed_views = o({});
 
     this.currently_active_states = [];
@@ -267,9 +267,9 @@ export class Router {
 }
 
 
-export class ViewAtom extends VirtualAtom {
+export class ViewAtom extends Atom {
   constructor(name) {
-    super();
+    super(null);
     this.name = `View<${name}>`;
   }
 }
@@ -315,12 +315,12 @@ export function View(attrs, children) {
 
   let vctrl = new ViewController(attrs.name);
 
-  let node = new ViewAtom(attrs.name);
-  node.addController(vctrl);
+  let atom = new ViewAtom(attrs.name);
+  atom.addController(vctrl);
 
   if (attrs.router)
     vctrl.setRouter(attrs.router);
 
-  return node;
+  return atom;
 
 }

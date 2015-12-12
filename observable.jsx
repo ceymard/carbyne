@@ -63,8 +63,8 @@ export class Observable {
    *  called!)
    *
    *  Note: Most of the time, when using observers in conjunction
-   *  with Nodes, prefer using `Node#observe` as the observer are
-   *  then tied to the life of the node ; whenever it is destroyed,
+   *  with Atoms, prefer using `Atom#observe` as the observer are
+   *  then tied to the life of the atom ; whenever it is destroyed,
    *  all the associated observers are unsubscribed
    *
    * @param {Function} fn A callback function called with the new value

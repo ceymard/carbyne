@@ -134,7 +134,10 @@ export class Atom {
       this.on('create', this.listen.bind(this, obs, cbk));
     else {
       this.element.addEventListener(event, cbk);
-      this.on('destroy', () => this.element.removeEventListener(event, cbk));
+      this.on('destroy:before', () => {
+        console.log('bye');
+        this.element.removeEventListener(event, cbk)
+      });
     }
   }
 
@@ -154,20 +157,20 @@ export class Atom {
   getController(cls, opts = {}) {
 
     let res = null;
-    let node = this;
+    let atom = this;
 
     let all = opts.all;
     let recursive = opts.recursive != false;
 
-    while (node) {
-      for (let ctrl of node.controllers) {
+    while (atom) {
+      for (let ctrl of atom.controllers) {
         if (ctrl instanceof cls) {
           return ctrl;
         }
       }
 
       if (!recursive) return null;
-      node = node.parent;
+      atom = atom.parent;
     }
 
     return null;
@@ -360,32 +363,17 @@ export class Atom {
 
 }
 
-/**
- * It has no children. It may have in the future, but it has to wait until
- * it's mounted to actually start appending things into the DOM.
- */
-export class VirtualAtom extends Atom {
-
-  constructor() {
-    super(null, {}, []);
-    // We have to track manually the DOM children that we insert, since
-    // the removal is between two comment nodes.
-    this.name = 'Virtual Node';
-  }
-
-}
-
-
 var _obs_count = 0;
 
 /**
  * An ObservableAtom is a node built on an observable.
- * It extends the VirtualAtom in the sense that it needs the comment as an insertion point.
+ * It uses an Atom without a tag, which means it will be using
+ * comment nodes to insert its contents.
  */
-export class ObservableAtom extends VirtualAtom {
+export class ObservableAtom extends Atom {
 
   constructor(obs) {
-    super();
+    super(null);
     this.obs = obs;
     this.last_was_text = false;
     _obs_count++;
