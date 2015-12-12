@@ -2,7 +2,7 @@
 import {bind, click, cls, transition, ctrl} from './decorators';
 import {Controller} from './controller';
 import {o, Observable} from './observable';
-import {HtmlNode, VirtualNode, ObservableNode} from './node';
+import {Atom, VirtualAtom, ObservableAtom} from './atom';
 import {Router, View} from './router';
 var {pathget, pathset} = require('./helpers');
 
@@ -20,7 +20,7 @@ function c(elt, attrs, ...children) {
 
   if (typeof elt === 'string') {
     // If we have a string, then it is a simple html element.
-    node = new HtmlNode(elt, attrs, children);
+    node = new Atom(elt, attrs, children);
 
   } else if (typeof elt === 'function') {
     // If it is a function, then the element is composite.
@@ -67,7 +67,7 @@ function Fragment(attrs, children) {
   return children;
 }
 
-module.exports = {c, o, Observable, HtmlNode, VirtualNode, ObservableNode,
+module.exports = {c, o, Observable, Atom, VirtualAtom, ObservableAtom,
   Controller,
   bind, click, cls, transition, ctrl,
   Fragment,

@@ -25,9 +25,9 @@ let ident = 0;
  */
 
 /**
- * HtmlNode is a wrapper on nodes.
+ * Atom is a wrapper on nodes.
  */
-export class HtmlNode {
+export class Atom {
 
   /**
    * @param  {String} tag      The tag name. It always will be lowercase.
@@ -35,12 +35,14 @@ export class HtmlNode {
    * @param  {Array} children  The list of children.
    */
   constructor(tag = null, attrs, children = []) {
+    this.parent = null;
     this.tag = tag;
     this.attrs = attrs;
     this.initial_children = children;
     this.children = [];
     this.listeners = {};
     this.controllers = [];
+    this._destroyed = false;
 
     // Used for DOM insertions.
     this.element = null;
@@ -99,7 +101,7 @@ export class HtmlNode {
     this.trigger(event, ...args);
     if (!event.propagating) return;
     for (let c of this.children) {
-      if (c instanceof HtmlNode) c.broadcast(event, ...args);
+      if (c instanceof Atom) c.broadcast(event, ...args);
     }
   }
 
@@ -121,10 +123,19 @@ export class HtmlNode {
     cbk = cbk || identity;
     if (obs instanceof Observable) {
       let unregister = obs.addObserver(cbk)
-      this.on('remove', unregister);
+      this.on('destroy', unregister);
     } else
       // Fire immediately if this is not an observable.
       cbk(obs);
+  }
+
+  listen(event, cbk) {
+    if (!this.element)
+      this.on('create', this.listen.bind(this, obs, cbk));
+    else {
+      this.element.addEventListener(event, cbk);
+      this.on('destroy', () => this.element.removeEventListener(event, cbk));
+    }
   }
 
   /////////////////////////////////////////////////////////////////
@@ -169,7 +180,7 @@ export class HtmlNode {
    */
   addController(cn) {
     this.controllers.push(cn);
-    cn.setNode(this);
+    cn.setAtom(this);
   }
 
   /////////////////////////////////////////////////////////////////
@@ -181,7 +192,9 @@ export class HtmlNode {
   createDOM() {
     let elt = null;
 
-    this.trigger('before-create');
+    if (this._destroyed) throw new Error('cannot create a destroyed Atom');
+
+    this.trigger('create:before');
 
     if (this.tag) {
       elt = this.createElement(this.tag);
@@ -224,7 +237,7 @@ export class HtmlNode {
    *                       then the current node is appended to the parent.
    */
   mount(parent, before = null) {
-    this.trigger('before-mount', parent, before);
+    this.trigger('mount:before', parent, before);
 
     this.parentNode = parent;
 
@@ -253,7 +266,7 @@ export class HtmlNode {
     if (typeof child === 'function') child = child();
 
     if (child instanceof Observable) {
-      child = new ObservableNode(child);
+      child = new ObservableAtom(child);
     }
 
     if (Array.isArray(child)) {
@@ -262,7 +275,7 @@ export class HtmlNode {
     } else if (child instanceof Node) {
       this.children.push(child);
       this.insertionParent.insertBefore(child, this.insertionNode);
-    } else if (child instanceof HtmlNode) {
+    } else if (child instanceof Atom) {
       this.children.push(child);
       child.parent = this;
       child.mount(this.insertionParent, this.insertionNode);
@@ -275,9 +288,9 @@ export class HtmlNode {
   }
 
   unmount() {
-    if (this._unmounted) return;
+    if (!this.parentNode) return;
 
-    this.trigger('before-unmount');
+    this.trigger('unmount:before');
 
     this.parentNode.removeChild(this.element);
 
@@ -288,9 +301,9 @@ export class HtmlNode {
     }
 
     this._unmonted = true;
-    this.trigger('unmount');
     this.parentNode = null;
     this.insertionParent = null;
+    this.trigger('unmount');
 
     return this;
   }
@@ -299,16 +312,14 @@ export class HtmlNode {
     // This does not remove element from the DOM !
     // But maybe it should...
     let idx = this.children.indexOf(child);
-    if (idx > -1) this.children.splice(idx, 1);
+    if (idx > -1) {
+      this.children.splice(idx, 1);
+      child.parent = null;
+    }
   }
 
-  remove() {
-    this.trigger('before-remove');
-
-    // should check if we're already unmounted.
-
-    // This is probably here that we should also destroy
-    // the children.
+  destroy() {
+    this.trigger('destroy:before')
 
     this.unmount();
 
@@ -317,8 +328,11 @@ export class HtmlNode {
     this.insertionNode = null;
     this.element = null;
 
-    // remove is sent to everyone, including children.
-    this.broadcast('remove');
+    this.broadcast('destroy');
+    this.trigger('destroy');
+    this.children = null;
+    this.attrs = null;
+    this._destroyed = true;
   }
 
   /**
@@ -338,7 +352,7 @@ export class HtmlNode {
       for (let c of children) {
         if (c instanceof Node) {
           this.parentNode.removeChild(c);
-        } else c.remove();
+        } else c.destroy();
       }
     }
     this.children = [];
@@ -350,7 +364,7 @@ export class HtmlNode {
  * It has no children. It may have in the future, but it has to wait until
  * it's mounted to actually start appending things into the DOM.
  */
-export class VirtualNode extends HtmlNode {
+export class VirtualAtom extends Atom {
 
   constructor() {
     super(null, {}, []);
@@ -365,10 +379,10 @@ export class VirtualNode extends HtmlNode {
 var _obs_count = 0;
 
 /**
- * An ObservableNode is a node built on an observable.
- * It extends the VirtualNode in the sense that it needs the comment as an insertion point.
+ * An ObservableAtom is a node built on an observable.
+ * It extends the VirtualAtom in the sense that it needs the comment as an insertion point.
  */
-export class ObservableNode extends VirtualNode {
+export class ObservableAtom extends VirtualAtom {
 
   constructor(obs) {
     super();
@@ -384,7 +398,7 @@ export class ObservableNode extends VirtualNode {
     this.observe(this.obs, (value) => {
       if (value === undefined) return;
 
-      let is_text = !(value instanceof HtmlNode || value instanceof Node || Array.isArray(value) || typeof value === 'function');
+      let is_text = !(value instanceof Atom || value instanceof Node || Array.isArray(value) || typeof value === 'function');
       if (is_text && this.last_was_text) {
         // Small optimization in the case that we just have to modify a text node
         // to avoid removing and adding Nodes around by reusing the last one we

@@ -3,21 +3,20 @@ export class Controller {
 
   constructor() {
 
-    this.node = null;
+    this.atom = null;
   }
 
-  destroy() {
+  onDestroy() {
     // remove reference to the node for easy GC collection.
-    this.node = null;
+    this.atom = null;
   }
 
-  setNode(node) {
-    this.node = node;
-    if (this.onCreate) node.on('create', this.onCreate.bind(this));
-    if (this.onMount) node.on('mount', this.onMount.bind(this));
-    if (this.onUnmount) node.on('unmount', this.onUnmount.bind(this));
-    if (this.onRemove) node.on('remove', this.onRemove.bind(this));
-    if (this.onCreateDOM) node.on('create-dom', this.onCreateDOM.bind(this));
+  setAtom(atom) {
+    this.atom = atom;
+    if (this.onCreate) atom.on('create', this.onCreate.bind(this));
+    if (this.onMount) atom.on('mount', this.onMount.bind(this));
+    if (this.onUnmount) atom.on('unmount', this.onUnmount.bind(this));
+    if (this.onDestroy) atom.on('destroy', this.onDestroy.bind(this));
   }
 
 }

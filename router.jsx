@@ -1,7 +1,7 @@
 
 import {o} from './observable';
 import {Controller} from './controller';
-import {VirtualNode} from './node';
+import {VirtualAtom} from './atom';
 
 function _merge(o1, o2) {
   for (let name in o2) o1[name] = o2[name];
@@ -240,16 +240,16 @@ export class Router {
    * A decorator that sets up the href
    */
   href(name, params) {
-    return (node) => {
+    return (atom) => {
       let state = this.states[name];
-      // node.attrs.href = '#' + state.getUrl(params);
+      // atom.attrs.href = '#' + state.getUrl(params);
 
-      node.on('mount', (ev) => {
-        node.observe(params, (p) => {
-          node.element.href = '#' + state.getUrl(params);
+      atom.on('mount', (ev) => {
+        atom.observe(params, (p) => {
+          atom.element.href = '#' + state.getUrl(params);
         });
 
-        node.observe(o(state.is_active, this.params, (act, pars) => {
+        atom.observe(o(state.is_active, this.params, (act, pars) => {
           if (!act) return false;
           if (!params) return true;
           for (let x in pars) {
@@ -257,8 +257,8 @@ export class Router {
           }
           return true;
         }), (b) => {
-          if (b) node.element.classList.add('active');
-          if (!b) node.element.classList.remove('active');
+          if (b) atom.element.classList.add('active');
+          if (!b) atom.element.classList.remove('active');
         })
       });
     }
@@ -267,7 +267,7 @@ export class Router {
 }
 
 
-export class ViewNode extends VirtualNode {
+export class ViewAtom extends VirtualAtom {
   constructor(name) {
     super();
     this.name = `View<${name}>`;
@@ -283,22 +283,22 @@ export class ViewController extends Controller {
 
   onMount() {
     if (!this.router) {
-      let parent_ctrl = this.node.parent.getController(ViewController);
+      let parent_ctrl = this.atom.parent.getController(ViewController);
       this.setRouter(parent_ctrl.router);
     } else this.link();
   }
 
   link() {
-    if (this.node && this.router && this.node.element)
-      this.node.observe(this.router.computed_views.path(this.name), (v) => {
+    if (this.atom && this.router && this.atom.element)
+      this.atom.observe(this.router.computed_views.path(this.name), (v) => {
         if (v && typeof v !== 'function') throw new Error(`Views must be functions in '${this.name}'`);
         this.setContent(v);
       });
   }
 
   setContent(c) {
-    this.node.empty(); // detach the children, remove the children.
-    this.node.append(c);
+    this.atom.empty(); // detach the children, remove the children.
+    this.atom.append(c);
   }
 
   setRouter(router) {
@@ -315,7 +315,7 @@ export function View(attrs, children) {
 
   let vctrl = new ViewController(attrs.name);
 
-  let node = new ViewNode(attrs.name);
+  let node = new ViewAtom(attrs.name);
   node.addController(vctrl);
 
   if (attrs.router)

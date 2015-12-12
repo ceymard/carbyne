@@ -10,7 +10,7 @@ export class BindController extends Controller {
   }
 
   onMount() {
-    let element = this.node.element;
+    let element = this.atom.element;
     let tag = element.tagName.toLowerCase();
     if (tag === 'input') this.linkToInput(element);
     if (tag === 'select') this.linkToSelect(element);
@@ -19,16 +19,13 @@ export class BindController extends Controller {
   linkToSelect(element) {
     let obs = this.obs;
     let opts = this.opts;
-    let node = this.node;
+    let atom = this.atom;
 
-    element.addEventListener('change', function (evt) {
-      // console.log(evt);
-      // console.log(this.value);
-      // this.value = 'gka';
+    atom.listen('change', function (evt) {
       obs.set(this.value);
     });
 
-    node.observe(obs, (val) => {
+    atom.observe(obs, (val) => {
       element.value = val;
     });
   }
@@ -37,7 +34,7 @@ export class BindController extends Controller {
 
     let obs = this.obs;
     let opts = this.opts;
-    let node = this.node;
+    let atom = this.atom;
 
     const convert = (val) => {
       if (type === 'number')
@@ -61,28 +58,28 @@ export class BindController extends Controller {
       case 'month':
       case 'time':
       case 'datetime-local':
-        node.observe(obs, (val) => element.value = val);
-        element.addEventListener('input', cbk);
+        atom.observe(obs, (val) => val !== element.value && (element.value = val));
+        atom.listen('input', cbk);
         break;
       case 'radio':
-        node.observe(obs, (val) => {
+        atom.observe(obs, (val) => {
           element.checked = element.value === val
         });
-        element.addEventListener('change', cbk);
+        atom.listen('change', cbk);
         break;
       case 'checkbox':
-        node.observe(obs, (val) => element.checked = val == true);
-        element.addEventListener('change', () => obs.set(element.checked));
+        atom.observe(obs, (val) => element.checked = val == true);
+        atom.listen('change', () => obs.set(element.checked));
         break;
       case 'number':
       case 'text':
       case 'password':
       case 'search':
       default:
-      node.observe(obs, (val) => element.value = val);
-      element.addEventListener('keyup', cbk);
-      element.addEventListener('input', cbk);
-      element.addEventListener('change', cbk);
+      atom.observe(obs, (val) => val !== element.value && (element.value = val));
+      atom.listen('keyup', cbk);
+      atom.listen('input', cbk);
+      atom.listen('change', cbk);
     }
 
   }
