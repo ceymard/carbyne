@@ -46,10 +46,13 @@ export class Atom {
 
     // Used for DOM insertions.
     this.element = null;
-    this.parentNode = null;
+    // the parentNode in the DOM of the current element held by the Atom
+    this._parentNode = null;
     // used as a `before` argument, useful when dealing with virtual nodes.
-    this.insertionNode = null;
-    this.insertionParent = null;
+    this._insertionNode = null;
+    // The parent node used to insert children, which this.element
+    // or the parentNode of the current comment node if there is no element.
+    this._insertionParent = null;
   }
 
   /////////////////////////////////////////////////////////////////
@@ -189,30 +192,29 @@ export class Atom {
     return document.createElement(tag);
   }
 
-  createDOM() {
-    let elt = null;
+  setAttributes(attrs) {
+    for (let name in attrs) {
+      let a = attrs[name];
+      if (a instanceof Observable) {
+        this.observe(a, (value) => {
+          if (value !== undefined) this.element.setAttribute(name, forceString(value))
+          else this.element.removeAttribute(name);
+        });
+      } else {
+        if (a !== undefined) this.element.setAttribute(name, forceString(a));
+      }
+    }
+  }
 
+  _create() {
     if (this._destroyed) throw new Error('cannot create a destroyed Atom');
 
     this.trigger('create:before');
 
     if (this.tag) {
-      elt = this.createElement(this.tag);
-      this.element = elt;
-      this.insertionParent = this.element;
-
-      let attrs = this.attrs;
-      for (let name in attrs) {
-        let a = attrs[name];
-        if (a instanceof Observable) {
-          this.observe(a, (value) => {
-            if (value !== undefined) elt.setAttribute(name, forceString(value))
-            else elt.removeAttribute(name);
-          });
-        } else {
-          if (a !== undefined) elt.setAttribute(name, forceString(a));
-        }
-      }
+      this.element = this.createElement(this.tag);
+      this._insertionParent = this.element;
+      this.setAttributes(this.attrs);
 
       let children = this.initial_children;
       // We'll not be using them anymore.
@@ -222,7 +224,7 @@ export class Atom {
       }
     } else {
       this.element = document.createComment('!');
-      this.insertionNode = document.createComment('!!');
+      this._insertionNode = document.createComment('!!');
     }
 
     // The created event will allow the decorators to do some set up on the dom
@@ -239,19 +241,19 @@ export class Atom {
   mount(parent, before = null) {
     this.trigger('mount:before', parent, before);
 
-    this.parentNode = parent;
+    this._parentNode = parent;
 
-    if (!this.element) this.createDOM();
+    if (!this.element) this._create();
 
     // Insert our element in the DOM.
     parent.insertBefore(this.element, before);
     if (!this.tag) {
       // This is to handle the case of virtual nodes.
-      this.insertionParent = parent;
-      this.insertionParent.insertBefore(this.insertionNode, before);
+      this._insertionParent = parent;
+      this._insertionParent.insertBefore(this._insertionNode, before);
     } else {
-      this.insertionParent = this.element;
-      this.insertionNode = before;
+      this._insertionParent = this.element;
+      this._insertionNode = before;
     }
 
     this._unmounted = false;
@@ -274,35 +276,35 @@ export class Atom {
       for (let c of child) this.append(c);
     } else if (child instanceof Node) {
       this.children.push(child);
-      this.insertionParent.insertBefore(child, this.insertionNode);
+      this._insertionParent.insertBefore(child, this._insertionNode);
     } else if (child instanceof Atom) {
       this.children.push(child);
       child.parent = this;
-      child.mount(this.insertionParent, this.insertionNode);
+      child.mount(this._insertionParent, this._insertionNode);
     } else {
       child = document.createTextNode(forceString(child));
       this.children.push(child);
-      this.insertionParent.insertBefore(child, this.insertionNode);
+      this._insertionParent.insertBefore(child, this._insertionNode);
     }
 
   }
 
   unmount() {
-    if (!this.parentNode) return;
+    if (!this._parentNode) return;
 
     this.trigger('unmount:before');
 
-    this.parentNode.removeChild(this.element);
+    this._parentNode.removeChild(this.element);
 
     // Case for virtual nodes that need to unmount.
-    if (this.insertionParent === this.parentNode) {
+    if (this._insertionParent === this._parentNode) {
       this.empty(true);
-      this.parentNode.removeChild(this.insertionNode);
+      this._parentNode.removeChild(this._insertionNode);
     }
 
     this._unmonted = true;
-    this.parentNode = null;
-    this.insertionParent = null;
+    this._parentNode = null;
+    this._insertionParent = null;
     this.trigger('unmount');
 
     return this;
@@ -323,9 +325,9 @@ export class Atom {
 
     this.unmount();
 
-    this.parentNode = null;
-    this.insertionParent = null;
-    this.insertionNode = null;
+    this._parentNode = null;
+    this._insertionParent = null;
+    this._insertionNode = null;
     this.element = null;
 
     this.broadcast('destroy');
@@ -345,13 +347,13 @@ export class Atom {
     if (detach) {
       for (let c of children) {
         if (c instanceof Node) {
-          this.parentNode.removeChild(c);
+          this._parentNode.removeChild(c);
         } else c.unmount();
       }
     } else {
       for (let c of children) {
         if (c instanceof Node) {
-          this.parentNode.removeChild(c);
+          this._parentNode.removeChild(c);
         } else c.destroy();
       }
     }
