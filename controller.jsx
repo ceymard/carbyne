@@ -13,6 +13,7 @@ export class Controller {
 
   setNode(node) {
     this.node = node;
+    if (this.onCreate) node.on('create', this.onCreate.bind(this));
     if (this.onMount) node.on('mount', this.onMount.bind(this));
     if (this.onUnmount) node.on('unmount', this.onUnmount.bind(this));
     if (this.onRemove) node.on('remove', this.onRemove.bind(this));
