@@ -134,10 +134,7 @@ export class Atom {
       this.on('create', this.listen.bind(this, obs, cbk));
     else {
       this.element.addEventListener(event, cbk);
-      this.on('destroy:before', () => {
-        console.log('bye');
-        this.element.removeEventListener(event, cbk)
-      });
+      this.on('destroy:before', () => this.element.removeEventListener(event, cbk));
     }
   }
 
@@ -322,7 +319,7 @@ export class Atom {
   }
 
   destroy() {
-    this.trigger('destroy:before')
+    this.broadcast('destroy:before')
 
     this.unmount();
 
