@@ -194,7 +194,10 @@ export class LinkedObservable extends Observable {
     // to the original observable.
     // This is so the original observer does not retain a reference
     // to this object and to allow it to be collected.
-    if (this.observers.length === 0 && this._unregister) this._unregister();
+    if (this.observers.length === 0 && this._unregister) {
+      this._unregister();
+      this._unregister = null;
+    }
     return result;
   }
 
