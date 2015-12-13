@@ -131,7 +131,7 @@ export class Observable {
    * @param  {String} path The path in dot format.
    * @return {DependentObservable} The resulting observable.
    */
-  path(path) {
+  prop(path) {
     return new LinkedObservable(this, path, identity, identity);
   }
 
@@ -140,6 +140,8 @@ export class Observable {
 // Some aliases.
 Observable.prototype.tf = Observable.prototype.transform;
 Observable.prototype.ro = Observable.prototype.readOnly;
+Observable.prototype.path = Observable.prototype.prop;
+Observable.prototype.p = Observable.prototype.prop;
 
 
 // XXX
