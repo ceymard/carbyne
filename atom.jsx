@@ -37,15 +37,15 @@ export class Atom {
   constructor(tag = null, attrs, children = []) {
     this.parent = null;
     this.tag = tag;
+    this.element = null;
     this.attrs = attrs;
-    this.initial_children = children;
     this.children = [];
-    this.listeners = {};
-    this.controllers = [];
+
+    this._initial_children = children;
+    this._listeners = {};
+    this._controllers = [];
     this._destroyed = false;
 
-    // Used for DOM insertions.
-    this.element = null;
     // the parentNode in the DOM of the current element held by the Atom
     this._parentNode = null;
     // used as a `before` argument, useful when dealing with virtual nodes.
@@ -74,13 +74,13 @@ export class Atom {
   }
 
   on(name, fn) {
-    if (!(name in this.listeners)) this.listeners[name] = {};
+    if (!(name in this._listeners)) this._listeners[name] = {};
     fn.$$ident = ident++;
-    this.listeners[name][fn.$$ident] = fn;
+    this._listeners[name][fn.$$ident] = fn;
   }
 
   off(name, fn) {
-    delete (this.listeners[name]||{})[fn.$$ident||'---'];
+    delete (this._listeners[name]||{})[fn.$$ident||'---'];
   }
 
   once(name, fn) {
@@ -110,7 +110,7 @@ export class Atom {
 
   trigger(event, ...args) {
     event = this._mkEvent(event);
-    let listeners = this.listeners[event.type] || {};
+    let listeners = this._listeners[event.type] || {};
 
     for (let id in listeners)
       listeners[id].call(this, event, ...args);
@@ -163,7 +163,7 @@ export class Atom {
     let recursive = opts.recursive != false;
 
     while (atom) {
-      for (let ctrl of atom.controllers) {
+      for (let ctrl of atom._controllers) {
         if (ctrl instanceof cls) {
           return ctrl;
         }
@@ -182,15 +182,11 @@ export class Atom {
    * @param {[type]} cn [description]
    */
   addController(cn) {
-    this.controllers.push(cn);
+    this._controllers.push(cn);
     cn.setAtom(this);
   }
 
   /////////////////////////////////////////////////////////////////
-
-  createElement(tag) {
-    return document.createElement(tag);
-  }
 
   setAttributes(attrs) {
     for (let name in attrs) {
@@ -212,13 +208,13 @@ export class Atom {
     this.trigger('create:before');
 
     if (this.tag) {
-      this.element = this.createElement(this.tag);
+      this.element = document.createElement(this.tag);
       this._insertionParent = this.element;
       this.setAttributes(this.attrs);
 
-      let children = this.initial_children;
+      let children = this._initial_children;
       // We'll not be using them anymore.
-      this.initial_children = null;
+      this._initial_children = null;
       for (let c of children) {
         this.append(c);
       }

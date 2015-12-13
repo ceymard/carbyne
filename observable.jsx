@@ -4,8 +4,8 @@ const {pathget, pathset, identity} = require('./helpers');
 export class Observable {
 
   constructor(value) {
-    this.observers = [];
-    this.stalkers = [];
+    this._observers = [];
+    this._stalkers = [];
     this._destroyed = false;
 
     this._value = undefined;
@@ -46,11 +46,11 @@ export class Observable {
     const current_value = this._value;
 
     if (update) {
-      for (let fn of this.observers)
+      for (let fn of this._observers)
         fn(current_value);
     }
 
-    for (let fn of this.stalkers) {
+    for (let fn of this._stalkers) {
       fn(current_value);
     }
 
@@ -80,9 +80,9 @@ export class Observable {
     if (this._destroyed) return;
 
     if (all_changes) {
-      this.stalkers.push(fn);
+      this._stalkers.push(fn);
     } else {
-      this.observers.push(fn);
+      this._observers.push(fn);
     }
 
     return this.removeObserver.bind(this, fn, all_changes);
@@ -90,18 +90,18 @@ export class Observable {
 
   removeObserver(fn, all_changes = false) {
     if (all_changes) {
-      let idx = this.stalkers.indexOf(fn);
-      if (idx > -1) this.stalkers.splice(idx, 1);
+      let idx = this._stalkers.indexOf(fn);
+      if (idx > -1) this._stalkers.splice(idx, 1);
     } else {
-      let idx = this.observers.indexOf(fn);
-      if (idx > -1) this.observers.splice(idx, 1);
+      let idx = this._observers.indexOf(fn);
+      if (idx > -1) this._observers.splice(idx, 1);
     }
   }
 
   // This Observable will never update anyone again.
   destroy() {
     this._destroyed = true;
-    this.observers = [];
+    this._observers = [];
   }
 
   /**
@@ -184,7 +184,7 @@ export class LinkedObservable extends Observable {
 
   addObserver() {
     // If there was no one listening, then set up the observer.
-    if (this.observers.length === 0)
+    if (this._observers.length === 0)
       this._unregister = this.obs.addObserver((v) => this._set(v), true);
     return super(...arguments);
   }
@@ -196,7 +196,7 @@ export class LinkedObservable extends Observable {
     // to the original observable.
     // This is so the original observer does not retain a reference
     // to this object and to allow it to be collected.
-    if (this.observers.length === 0 && this._unregister) {
+    if (this._observers.length === 0 && this._unregister) {
       this._unregister();
       this._unregister = null;
     }
@@ -264,7 +264,7 @@ export class DependentObservable extends Observable {
 
   removeObserver(fn) {
     super(fn);
-    if (this.observers.length === 0) {
+    if (this._observers.length === 0) {
       for (let d of this.unloaders) d(); // unregister all the dependencies.
     }
   }
