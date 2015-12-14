@@ -42,9 +42,9 @@ export class Atom {
     this.children = [];
 
     this._initial_children = children;
-    this._mounted = false;
     this._listeners = {};
     this._controllers = [];
+    this._mounted = false;
     this._destroyed = false;
 
     // the parentNode in the DOM of the current element held by the Atom

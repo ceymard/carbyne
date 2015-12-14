@@ -55,7 +55,8 @@ function c(elt, attrs, ...children) {
   // A decorator generally sets up events and add controllers
   if (decorators) {
     for (let d of decorators) {
-      atom = d(atom) || atom;
+      let decorated = d(atom);
+      atom = decorated instanceof Atom ? decorated : atom;
     }
   }
 
