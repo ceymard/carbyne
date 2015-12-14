@@ -99,11 +99,13 @@ export class State {
     };
 
     let _views = {};
-    // FIXME recreate data !!
+    let newdata = {};
+    _merge(newdata, data);
 
-    this.fn(_views, params, data);
+    this.fn(_views, params, newdata);
     this.view_functions = _views;
-    this.active_data = data;
+    this.active_data = newdata;
+    _merge(data, newdata);
     _merge(views, _views);
   }
 
