@@ -9,7 +9,7 @@ export class BindController extends Controller {
     this.opts = opts;
   }
 
-  onMount() {
+  onCreate() {
     let element = this.atom.element;
     let tag = element.tagName.toLowerCase();
     if (tag === 'input') this.linkToInput(element);
