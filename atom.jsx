@@ -42,6 +42,7 @@ export class Atom {
     this.children = [];
 
     this._initial_children = children;
+    this._mounted = false;
     this._listeners = {};
     this._controllers = [];
     this._destroyed = false;
@@ -215,9 +216,7 @@ export class Atom {
       let children = this._initial_children;
       // We'll not be using them anymore.
       this._initial_children = null;
-      for (let c of children) {
-        this.append(c);
-      }
+      this.append(children);
     } else {
       this.element = document.createComment('!');
       this._insertionNode = document.createComment('!!');
@@ -226,6 +225,7 @@ export class Atom {
     // The created event will allow the decorators to do some set up on the dom
     // like binding events, attributes, ...
     this.trigger('create');
+    delete this._listeners.create;
   }
 
   /**
@@ -252,7 +252,7 @@ export class Atom {
       this._insertionNode = before;
     }
 
-    this._unmounted = false;
+    this._mounted = false;
     this.trigger('mount', parent, before);
     return this;
   }
@@ -268,7 +268,6 @@ export class Atom {
     }
 
     if (Array.isArray(child)) {
-      // FIXME should probably do something with DOM fragments here since they allow reflow minimization.
       for (let c of child) this.append(c);
     } else if (child instanceof Node) {
       this.children.push(child);
@@ -298,7 +297,7 @@ export class Atom {
       this._parentNode.removeChild(this._insertionNode);
     }
 
-    this._unmonted = true;
+    this._mounted = false;
     this._parentNode = null;
     this._insertionParent = null;
     this.trigger('unmount');
@@ -327,10 +326,10 @@ export class Atom {
     this.element = null;
 
     this.broadcast('destroy');
-    this.trigger('destroy');
     this.children = null;
     this.attrs = null;
     this._destroyed = true;
+    this._listeners = null;
   }
 
   /**
@@ -358,8 +357,6 @@ export class Atom {
 
 }
 
-var _obs_count = 0;
-
 /**
  * An ObservableAtom is a node built on an observable.
  * It uses an Atom without a tag, which means it will be using
@@ -371,8 +368,6 @@ export class ObservableAtom extends Atom {
     super(null);
     this.obs = obs;
     this.last_was_text = false;
-    _obs_count++;
-    this.name = `Observable<${_obs_count}>`
   }
 
   mount() {
