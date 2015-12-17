@@ -140,6 +140,11 @@ export class PropObservable extends Observable {
 
   set(prop, value) {
     // Forward the set to the parent observable.
+    if (arguments.length === 1) {
+      value = prop;
+      prop = null;
+    }
+
     this._obs.set(pathjoin(this._prop, prop), value);
   }
 
@@ -167,7 +172,6 @@ export class TransformObservable extends Observable {
   constructor(obs, transformer) {
     super(undefined); // !!!
     this._obs = obs;
-    this._obs_value = undefined;
     this._transformer = transformer;
     this._unregister = null;
   }
