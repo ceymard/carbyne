@@ -9,6 +9,7 @@
  * @return {Any}  The value of the property.
  */
 export function pathget(obj, path) {
+  if (!path) return obj;
   path = path.split('.');
   for (let p of path) {
     if (!obj) break;
@@ -35,7 +36,9 @@ export function pathset(obj, path, value) {
     if (!obj[p]) obj[p] = {};
     obj = obj[p];
   }
+  const changed = obj[last] !== value;
   obj[last] = value;
+  return changed;
 }
 
 

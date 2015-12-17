@@ -1,282 +1,304 @@
-
 const {pathget, pathset, identity, pathjoin} = require('./helpers');
 
 
+const IS_CHILD = 1;
+const IS_ANCESTOR = 2;
+const IS_UNRELATED = 3;
+
+function _get_ancestry(p1, p2) {
+  p1 = '' + (p1 || '');
+  p2 = '' + (p2 || '');
+
+  // XXX indexOf is *slow*
+  if (p1.indexOf(p2) === 0)
+    return IS_CHILD; // p1 is a child of p2
+
+  if (p2.indexOf(p1) === 0)
+    return IS_ANCESTOR; // p1 is an ancestor of p2
+
+  return IS_UNRELATED;
+}
+
+/**
+ *
+ */
 export class Observable {
 
   constructor(value) {
+    this._value = value;
     this._observers = [];
-    this._stalkers = [];
-    this._destroyed = false;
-
-    this._value = undefined;
-    this.set(value);
   }
 
-  /**
-   * Get the current value of the observable.
-   * @returns {Any} The current value
-   */
-  get(path) {
-    if (path) return pathget(this._value, path);
-    return this._value;
+  get(prop) {
+    return pathget(this._value, prop);
   }
 
-  set(path, value) {
+  set(prop, value) {
 
-    // path is optional.
     if (arguments.length === 1) {
-      value = path;
-      path = undefined;
+      value = prop;
+      prop = null;
     }
 
-    let update = false;
+    if (value instanceof Observable) value = value._value;
 
-    // Is there a sense in this ?
-    if (value instanceof Observable) value = value.get();
+    let changed = false;
 
-    if (path !== undefined) {
-      // const old_value = pathget(this._value, path);
-      pathset(this._value, path, value);
-      // update = value !== old_value;
+    if (prop) {
+      changed = pathset(this._value, prop, value);
     } else {
-      const old_value = this._value;
-
+      changed = this._value !== value;
       this._value = value;
-      update = value !== old_value;
     }
 
-    const current_value = this._value;
-
-    if (update) {
-      for (let fn of this._observers)
-        fn(current_value);
+    if (changed) {
+      const val = this._value;
+      for (let obs of this._observers) {
+        // prop is given so that the linked observables know
+        // if the change interests them or not.
+        obs(val, prop);
+      }
     }
 
-    for (let fn of this._stalkers) {
-      fn(current_value);
-    }
-
-    return this;
   }
 
-  /**
-   *  Add an observer function that will be called whenever
-   *  the value of the observer changes (not whenever `set()` is
-   *  called!)
-   *
-   *  Note: Most of the time, when using observers in conjunction
-   *  with Atoms, prefer using `Atom#observe` as the observer are
-   *  then tied to the life of the atom ; whenever it is destroyed,
-   *  all the associated observers are unsubscribed
-   *
-   * @param {Function} fn A callback function called with the new value
-   *                      as its argument.
-   */
-  addObserver(fn, all_changes = false) {
-
-    // listeners are always given the current value if it is available upon subscribing.
-    if (this.hasOwnProperty('_value')) {
-      fn(this._value);
-    }
-
-    if (this._destroyed) return;
-
-    if (all_changes) {
-      this._stalkers.push(fn);
-    } else {
-      this._observers.push(fn);
-    }
-
-    return this.removeObserver.bind(this, fn, all_changes);
+  addObserver(fn) {
+    this._observers.push(fn);
+    fn(this._value);
+    return this.removeObserver.bind(this, fn);
   }
 
-  removeObserver(fn, all_changes = false) {
-    if (all_changes) {
-      let idx = this._stalkers.indexOf(fn);
-      if (idx > -1) this._stalkers.splice(idx, 1);
-    } else {
-      let idx = this._observers.indexOf(fn);
-      if (idx > -1) this._observers.splice(idx, 1);
+  removeObserver(fn) {
+    const index = this._observers.indexOf(fn);
+    if (index > -1) {
+      this._observers.splice(index, 1);
+      return true;
     }
+    return false;
   }
 
-  // This Observable will never update anyone again.
-  destroy() {
-    this._destroyed = true;
-    this._observers = [];
+  prop(prop) {
+    if (!prop) return this;
+    return new PropObservable(this, prop);
   }
 
-  /**
-   * Optionally two-way transformer.
-   * @param  {function} fnset The function that transforms the value.
-   * @param  {function} fnget The function that gets the value back into the current observable.
-   * @return {Observable}  The observable object that results.
-   */
-  transform(path, fnget, fnset) {
-    if (typeof path === 'function') { // there is no path.
-      fnset = fnget;
-      fnget = path;
-      path = null;
+  transform(prop, transformer) {
+
+    if (arguments.length === 1) {
+      transformer = prop;
+      prop = null;
     }
 
-    return new LinkedObservable(this, path, fnget || identity, fnset || identity);
-  }
+    if (!transformer.get) {
+      transformer = {get: transformer, set: null};
+    }
 
-  /**
-   * Gets an observable on an object's property.
-   * This is a special observable that is able to bind two ways unless
-   * asked not to.
-   * Like the DependentObservable, it will stop listening once it has
-   * no listeners anymore.
-   * It will get triggered everytime the original object is set.
-   *
-   * @param  {String} path The path in dot format.
-   * @return {DependentObservable} The resulting observable.
-   */
-  prop(path) {
-    return new LinkedObservable(this, path, identity, identity);
+    const obs = prop ? this.prop(prop) : this;
+    return new TransformObservable(obs, transformer);
   }
 
 }
 
-// Some aliases.
 Observable.prototype.tf = Observable.prototype.transform;
-Observable.prototype.ro = Observable.prototype.readOnly;
-Observable.prototype.path = Observable.prototype.prop;
 Observable.prototype.p = Observable.prototype.prop;
+Observable.prototype.path = Observable.prototype.prop;
 
 
-// XXX
-export class LinkedObservable extends Observable {
+export class PropObservable extends Observable {
 
-  constructor(obs, path, fnget, fnset) {
-    super(fnget(path ? pathget(obs.get(), path) : obs.get()));
-
-    this.obs = obs;
-    this.fnget = fnget;
-    this.fnset = fnset;
-    this._path = path;
-
-    this._unregister = null;
+  constructor(obs, prop) {
+    super(undefined);
+    this._prop = prop;
+    this._obs = obs;
   }
 
-  // Method to be called when the value changes
-  // in the parent observable.
-  _set(value) {
-    const pth = this._path;
-    if (pth) value = pathget(value, pth);
-    super.set(this.fnget(value));
-  }
-
-  get(path = null) {
-    if (!path) return this.fnget(this.obs.get(this._path));
-    else return this.fnget(this.obs.get(this._path + '.' + path));
-  }
-
-  set(path, value) {
-    if (arguments.length === 1) {
-      value = path;
-      path = null;
+  get(prop) {
+    if (!this._unregister) {
+      this._refresh();
+      // this._value = this._obs.get(this._prop);
     }
+    return this._value;
+  }
 
-    if (this.fnset) {
-      let pth = []
-      if (this._path) pth.push(this._path);
-      if (path) pth.push(path);
-      pth = pth.join('.');
-      if (pth.length === 0) this.obs.set(this.fnset(value));
-      else this.obs.set(pth, this.fnset(value));
+  _refresh(ancestry, prop) {
+    const old_val = this._value;
+    const new_val = this._value = this._obs.get(this._prop);
+
+    // if changed_prop is a sub property of this prop, then we will change
+    // automaticaly.
+    // if changed_prop is a parent property, then we're going to try to refresh
+    // but the observers won't necessarily be called, since we may not have
+    // changed.
+    const changed = ancestry === IS_ANCESTOR || old_val !== new_val;
+    const subprop = ancestry === IS_ANCESTOR ? prop.replace(this._prop + '.', '') : null;
+
+    if (changed) {
+      for (let obs of this._observers)
+        obs(new_val, subprop);
     }
+  }
+
+  set(prop, value) {
+    // Forward the set to the parent observable.
+    this._obs.set(pathjoin(this._prop, prop), value);
   }
 
   addObserver() {
-    // If there was no one listening, then set up the observer.
-    if (this._observers.length === 0)
-      this._unregister = this.obs.addObserver((v) => this._set(v), true);
+    if (!this._unregister) {
+      this._unregister = this._obs.addObserver((value, prop) => {
+        // Link observable changes to us.
+        const ancestry = _get_ancestry(this._prop, prop);
+        // console.log(ancestry, this._prop, prop);
+        // if changed_prop has nothing to do with us, then just ignore the set.
+        if (ancestry === IS_UNRELATED) return;
+
+        this._refresh(ancestry, prop);
+      });
+    }
+
+    return super(...arguments);
+  }
+
+}
+
+
+export class TransformObservable extends Observable {
+
+  constructor(obs, transformer) {
+    super(undefined); // !!!
+    this._obs = obs;
+    this._obs_value = undefined;
+    this._transformer = transformer;
+    this._unregister = null;
+  }
+
+  get(prop) {
+
+    if (!this._unregister) {
+      // Nobody is watching this observable, so it is not up to date.
+      this._value = this._transformer.get(this._obs.get());
+    }
+
+    return this._value;
+  }
+
+  _refresh(value) {
+    const old_val = this._value;
+    const new_val = this._value = this._transformer.get(value);
+    const changed = old_val !== new_val;
+
+    if (changed) {
+      for (let obs of this._observers) obs(new_val, null);
+    }
+  }
+
+  /**
+   * The transform observable does not set itself directly. Instead, it
+   * forwards the set to its observed.
+   */
+  set(prop, value) {
+
+    if (arguments.length > 1) {
+      throw new Error('transformers cannot set subpath');
+    }
+
+    value = prop;
+    prop = null;
+
+    this._obs.set(this._transformer.set(value));
+
+  }
+
+  addObserver(fn) {
+    if (!this._unregister) {
+      this._unregister = this._obs.addObserver(value => this._refresh(value));
+    }
+    return super.addObserver(...arguments);
+  }
+
+  removeObserver(fn) {
+    super.removeObserver(...arguments);
+    if (this._observers.length === 0) {
+      this._unregister();
+      this._unregister = null;
+    }
+  }
+
+}
+
+
+export class DependentObservable extends Observable {
+
+  constructor(deps, fn) {
+    super(undefined);
+
+    this._resolved = null;
+    this._unregister = [];
+    this._deps = deps;
+    this._fn = fn;
+
+    this._ignore_updates = false;
+  }
+
+  get(prop) {
+    this._refresh();
+    return pathget(this._value, prop);
+  }
+
+  set() {
+    throw new Error('cannot set on a DependentObservable');
+  }
+
+  _refresh() {
+    if (this._ignore_updates) return;
+    const old_val = this._value;
+    const resolved = this._resolved || this._deps.map(dep => o.get(dep));
+    const new_val = this._value = this._fn(...resolved);
+
+    if (old_val === new_val) return;
+
+    for (let obs of this._observers) obs(new_val);
+  }
+
+  addObserver(fn) {
+    if (this._observers.length === 0) {
+      // Set up the observing.
+
+      this._resolved = [];
+      let idx = -1;
+      this._ignore_updates = true;
+      for (let obs of this._deps) {
+        idx++;
+
+        if (!(obs instanceof Observable)) {
+          this._resolved.push(obs);
+          continue;
+        }
+
+        this._unregister.push(obs.addObserver((idx, value) => {
+          this._resolved[idx] = value;
+          this._refresh();
+        }.bind(this, idx)));
+      }
+      this._ignore_updates = false;
+      this._refresh();
+    }
+
     return super(...arguments);
   }
 
   removeObserver() {
-    const result = super(...arguments);
-
-    // If no one observes this object anymore, then we stop listening
-    // to the original observable.
-    // This is so the original observer does not retain a reference
-    // to this object and to allow it to be collected.
-    if (this._observers.length === 0 && this._unregister) {
-      this._unregister();
-      this._unregister = null;
-    }
-    return result;
-  }
-
-}
-
-
-/**
- * The DependentObservable is based on other observables (and optionnaly values too).
- * It uses a function to give its value.
- *
- * Whenever the last of its listeners unsubscribes, it unsubscribes from the
- * Observables it depends upon.
- *
- * FIXME : Do the same thing than for LinkedObservable to allow this observable
- * to be collected if it is not listened to and is lost somewhere.
- */
-export class DependentObservable extends Observable {
-
-  constructor(deps, fnget) {
-    super(undefined); // by default the value is undefined.
-    this.fnget = fnget;
-    this.unloaders = [];
-    this.args = [];
-    this.missing = deps.length;
-
-    for (let dep of deps) {
-      if (dep instanceof Observable) {
-        let index = this.args.length;
-        let resolved = false;
-        this.args.push(undefined);
-        this.unloaders.push(dep.addObserver((v) => {
-          if (!resolved) {
-            this.missing--;
-            resolved = true;
-          }
-          this.args[index] = v;
-          this._set();
-        }));
-      } else {
-        this.missing--;
-        this.args.push(dep);
-      }
-    }
-
-    this._set();
-
-  }
-
-  _set() {
-    if (this.missing === 0)
-      // If there are no missing unloaders, then just call the apply function.
-      Observable.prototype.set.call(this, this.fnget.apply(null, this.args));
-  }
-
-  // Override set so that this Observable can't be set.
-  set(value) {
-    if (this.fnset) {
-      for (let d of this.dependencies)
-        d.set(this.fnset(value));
-    }
-  }
-
-  removeObserver(fn) {
-    super(fn);
+    super(...arguments);
     if (this._observers.length === 0) {
-      for (let d of this.unloaders) d(); // unregister all the dependencies.
+      for (let un of this._unregister) un();
+      this._unregister = [];
+      this._resolved = null;
     }
   }
+
 }
+
+
 
 
 /**
