@@ -1,5 +1,6 @@
 
-const {pathget, pathset, identity} = require('./helpers');
+const {pathget, pathset, identity, pathjoin} = require('./helpers');
+
 
 export class Observable {
 
@@ -35,7 +36,9 @@ export class Observable {
     if (value instanceof Observable) value = value.get();
 
     if (path !== undefined) {
+      // const old_value = pathget(this._value, path);
       pathset(this._value, path, value);
+      // update = value !== old_value;
     } else {
       const old_value = this._value;
 
@@ -164,6 +167,11 @@ export class LinkedObservable extends Observable {
     const pth = this._path;
     if (pth) value = pathget(value, pth);
     super.set(this.fnget(value));
+  }
+
+  get(path = null) {
+    if (!path) return this.fnget(this.obs.get(this._path));
+    else return this.fnget(this.obs.get(this._path + '.' + path));
   }
 
   set(path, value) {

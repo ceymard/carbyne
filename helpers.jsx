@@ -3,7 +3,7 @@
 /**
  * Get a deep property using a string accessor.
  * Eg: `obj = {a: {b: 2}}; pathget(obj, 'a.b') => 2`
- *   
+ *
  * @param  {Object} obj  The source object
  * @param  {String} path The path inside the object
  * @return {Any}  The value of the property.
@@ -21,7 +21,7 @@ export function pathget(obj, path) {
 /**
  * Set a deep property using a string accessor.
  * Eg: `pathset(myobj, 'my.deep.prop', value)`.
- * 
+ *
  * @param  {Object} obj   The root object
  * @param  {String} path  A path to a deep property. Dots are used
  *                        to go into sub-objects.
@@ -57,4 +57,13 @@ export function forceString(val) {
   if (val === undefined || val === null) val = '';
   else if (typeof val === 'object') val = JSON.stringify(val);
   return val.toString();
+}
+
+
+export function pathjoin() {
+  const pathes = [];
+  for (let pth of arguments) {
+    if (pth) pathes.push(pth);
+  }
+  return pathes.join('.');
 }
