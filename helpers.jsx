@@ -74,11 +74,11 @@ export function pathjoin() {
 
 export function clonedeep(obj) {
   if (obj instanceof Array)
-    return obj.map(elt => deepclone(elt));
+    return obj.map(elt => clonedeep(elt));
   if ('object' === typeof obj) {
     var res = {};
     for (var prop in obj)
-      res[prop] = deepclone(obj[prop]);
+      res[prop] = clonedeep(obj[prop]);
     return res;
   }
   return obj; // simple type, does not need to be cloned
