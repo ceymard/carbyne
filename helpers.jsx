@@ -70,3 +70,16 @@ export function pathjoin() {
   }
   return pathes.join('.');
 }
+
+
+export function clonedeep(obj) {
+  if (obj instanceof Array)
+    return obj.map(elt => deepclone(elt));
+  if ('object' === typeof obj) {
+    var res = {};
+    for (var prop in obj)
+      res[prop] = deepclone(obj[prop]);
+    return res;
+  }
+  return obj; // simple type, does not need to be cloned
+}

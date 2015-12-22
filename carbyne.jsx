@@ -4,7 +4,7 @@ import {Controller} from './controller';
 import {o, Observable} from './observable';
 import {Atom, ObservableAtom} from './atom';
 import {Router, View} from './router';
-var {pathget, pathset, identity, noop} = require('./helpers');
+var {pathget, pathset, identity, noop, clonedeep} = require('./helpers');
 
 
 function c(elt, attrs, ...children) {
@@ -73,5 +73,5 @@ module.exports = {c, o, Observable, Atom, ObservableAtom,
   bind, click, cls, transition, ctrl,
   Fragment,
   Router, View,
-  pathget, pathset, identity, noop
+  pathget, pathset, identity, noop, clonedeep
 };
