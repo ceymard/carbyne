@@ -79,8 +79,22 @@ export function transition(name = '') {
   return function transitionDecorator(atom) {
     atom.on('mount', function () {
       atom.element.classList.add(`${name}enter`);
-      requestAnimationFrame(() => atom.element.classList.remove(`${name}enter`));
+      setTimeout(() => requestAnimationFrame(() => atom.element.classList.remove(`${name}enter`)));
     });
+
+    atom.on('unmount:before', function () {
+      // Duplicate the DOM node and apply the .leave class
+      // try to tell by the computed css on the element if we indeed have an end transition
+      // var dup = atom.element.cloneNode();
+      // dup.classList.add(`${name}leave`);
+      // var has_transition = dup; // ???
+      // // listen the animationend event and then remove the duplicate from the dom.
+      // if (!has_transition) dup = null;
+      // dup.insertBefore(atom.element.parentNode, atom.element);
+      // dup.addEventListener('transitionend', function () {
+      //   dup.parentNode.removeChild(dup);
+      // });
+    })
 
     let orig_remove = atom.removeFromDOM;
     atom.removeFromDOM = function removeFromDOMTransition() {
