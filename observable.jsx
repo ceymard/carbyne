@@ -40,7 +40,7 @@ export class Observable {
       prop = null;
     }
 
-    if (value instanceof Observable) value = value._value;
+    // if (value instanceof Observable) value = value._value;
 
     let changed = false;
 
