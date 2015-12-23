@@ -376,7 +376,14 @@ export class ObservableAtom extends Atom {
     this.observe(this.obs, (value) => {
       if (value === undefined) return;
 
-      let is_text = !(value instanceof Atom || value instanceof Node || Array.isArray(value) || typeof value === 'function');
+      let is_text = !(
+        value instanceof Atom ||
+        value instanceof Node ||
+        Array.isArray(value) ||
+        typeof value === 'function' ||
+        value instanceof Observable
+      );
+
       if (is_text && this.last_was_text) {
         // Small optimization in the case that we just have to modify a text node
         // to avoid removing and adding Nodes around by reusing the last one we
