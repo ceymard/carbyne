@@ -117,7 +117,7 @@ export class PropObservable extends Observable {
       this._refresh();
       // this._value = this._obs.get(this._prop);
     }
-    return this._value;
+    return pathget(this._value, prop);
   }
 
   _refresh(ancestry, prop) {
