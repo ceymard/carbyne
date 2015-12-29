@@ -83,3 +83,11 @@ export function clonedeep(obj) {
   }
   return obj; // simple type, does not need to be cloned
 }
+
+
+export function merge(dst, src) {
+  for (var x in src) {
+    dst[x] = src[x];
+  }
+  return dst;
+}

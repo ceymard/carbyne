@@ -4,7 +4,8 @@ import {Controller} from './controller';
 import {o, Observable} from './observable';
 import {Atom, ObservableAtom} from './atom';
 import {Router, View} from './router';
-var {pathget, pathset, identity, noop, clonedeep} = require('./helpers');
+import {Eventable} from './eventable';
+var {pathget, pathset, identity, noop, clonedeep, merge} = require('./helpers');
 
 
 function c(elt, attrs, ...children) {
@@ -68,10 +69,21 @@ function Fragment(attrs, children) {
   return children;
 }
 
-module.exports = {c, o, Observable, Atom, ObservableAtom,
+module.exports = {
+  // core
+  c, Fragment,
+  // observable
+  o, Observable, 
+  // atom
+  Atom, ObservableAtom,
+  // controller
   Controller,
+  // decorators
   bind, click, cls, transition, ctrl,
-  Fragment,
+  // router
   Router, View,
-  pathget, pathset, identity, noop, clonedeep
+  // helpers
+  pathget, pathset, identity, noop, clonedeep, merge,
+  // eventable
+  Eventable
 };

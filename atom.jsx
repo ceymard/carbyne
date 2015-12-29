@@ -1,8 +1,8 @@
 
 import {identity, forceString} from './helpers';
 import {Observable, o} from './observable';
+import {Eventable} from './eventable';
 
-let ident = 0;
 
 /**
   Noteworthy events ;
@@ -27,7 +27,7 @@ let ident = 0;
 /**
  * Atom is a wrapper on nodes.
  */
-export class Atom {
+export class Atom extends Eventable {
 
   /**
    * @param  {String} tag      The tag name. It always will be lowercase.
@@ -35,6 +35,7 @@ export class Atom {
    * @param  {Array} children  The list of children.
    */
   constructor(tag = null, attrs, children = []) {
+    super();
     this.parent = null;
     this.tag = tag;
     this.element = null;
@@ -42,7 +43,6 @@ export class Atom {
     this.children = [];
 
     this._initial_children = children;
-    this._listeners = {};
     this._controllers = [];
     this._mounted = false;
     this._destroyed = false;
@@ -54,69 +54,6 @@ export class Atom {
     // The parent node used to insert children, which this.element
     // or the parentNode of the current comment node if there is no element.
     this._insertionParent = null;
-  }
-
-  /////////////////////////////////////////////////////////////////
-
-  _mkEvent(event) {
-    if (typeof event === 'string')
-      return {
-        type: event,
-        target: this,
-        prevent_default: false,
-        preventDefault() { this.prevent_default = true; },
-        propagating: true,
-        stopPropagation() { this.propagating = false; },
-    };
-    let e = {};
-    for (let x in event)
-      e[x] = event[x];
-    return e;
-  }
-
-  on(name, fn) {
-    if (!(name in this._listeners)) this._listeners[name] = {};
-    fn.$$ident = ident++;
-    this._listeners[name][fn.$$ident] = fn;
-  }
-
-  off(name, fn) {
-    delete (this._listeners[name]||{})[fn.$$ident||'---'];
-  }
-
-  once(name, fn) {
-    let self = this;
-    let cbk = function () {
-      fn.apply(this, arguments);
-      self.off(name, cbk);
-    }
-    this.on(name, cbk);
-  }
-
-  emit(event, ...args) {
-    event = this._mkEvent(event);
-    this.trigger(event, ...args);
-    if (this.parent && event.propagating)
-      this.parent.emit(event, ...args);
-  }
-
-  broadcast(event, ...args) {
-    event = this._mkEvent(event);
-    this.trigger(event, ...args);
-    if (!event.propagating) return;
-    for (let c of this.children) {
-      if (c instanceof Atom) c.broadcast(event, ...args);
-    }
-  }
-
-  trigger(event, ...args) {
-    event = this._mkEvent(event);
-    let listeners = this._listeners[event.type] || {};
-
-    for (let id in listeners)
-      listeners[id].call(this, event, ...args);
-
-    return this;
   }
 
   /**
