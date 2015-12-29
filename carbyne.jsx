@@ -3,7 +3,6 @@ import {bind, click, cls, transition, ctrl} from './decorators';
 import {Controller} from './controller';
 import {o, Observable} from './observable';
 import {Atom, ObservableAtom} from './atom';
-import {Router, View} from './router';
 import {Eventable} from './eventable';
 var {pathget, pathset, identity, noop, clonedeep, merge} = require('./helpers');
 
@@ -80,8 +79,6 @@ module.exports = {
   Controller,
   // decorators
   bind, click, cls, transition, ctrl,
-  // router
-  Router, View,
   // helpers
   pathget, pathset, identity, noop, clonedeep, merge,
   // eventable
