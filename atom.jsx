@@ -56,6 +56,22 @@ export class Atom extends Eventable {
     this._insertionParent = null;
   }
 
+  emit(event, ...args) {
+    event = this._mkEvent(event);
+    this.trigger(event, ...args);
+    if (this.parent && event.propagating)
+      this.parent.emit(event, ...args);
+  }
+
+  broadcast(event, ...args) {
+    event = this._mkEvent(event);
+    this.trigger(event, ...args);
+    if (!event.propagating) return;
+    for (let c of this.children) {
+      if (c instanceof Atom) c.broadcast(event, ...args);
+    }
+  }
+
   /**
    * Convenience method to tie the observation of an observable
    * to the life cycle of a node.

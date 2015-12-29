@@ -45,22 +45,6 @@ export class Eventable {
     this.on(name, cbk);
   }
 
-  emit(event, ...args) {
-    event = this._mkEvent(event);
-    this.trigger(event, ...args);
-    if (this.parent && event.propagating)
-      this.parent.emit(event, ...args);
-  }
-
-  broadcast(event, ...args) {
-    event = this._mkEvent(event);
-    this.trigger(event, ...args);
-    if (!event.propagating) return;
-    for (let c of this.children) {
-      if (c.broadcast) c.broadcast(event, ...args);
-    }
-  }
-
   trigger(event, ...args) {
     event = this._mkEvent(event);
     let listeners = this._listeners[event.type] || {};
