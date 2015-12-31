@@ -27,13 +27,13 @@ export class Eventable {
   }
 
   on(name, fn) {
-    if (!(name in this._listeners)) this._listeners[name] = {};
-    fn.$$ident = ident++;
-    this._listeners[name][fn.$$ident] = fn;
+    if (!(name in this._listeners)) this._listeners[name] = [];
+    ident++;
+    this._listeners[name][ident] = fn;
   }
 
-  off(name, fn) {
-    delete (this._listeners[name]||{})[fn.$$ident||'---'];
+  off(name, ident) {
+    delete (this._listeners[name]||{})[ident||'---'];
   }
 
   once(name, fn) {
@@ -47,12 +47,14 @@ export class Eventable {
 
   trigger(event, ...args) {
     event = this._mkEvent(event);
+    const result = [];
     let listeners = this._listeners[event.type] || {};
 
-    for (let id in listeners)
-      listeners[id].call(this, event, ...args);
+    for (let id in listeners) {
+      result.push(listeners[id].call(this, event, ...args));
+    }
 
-    return this;
+    return result;
   }
 
 

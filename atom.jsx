@@ -58,18 +58,20 @@ export class Atom extends Eventable {
 
   emit(event, ...args) {
     event = this._mkEvent(event);
-    this.trigger(event, ...args);
+    const res = this.trigger(event, ...args);
     if (this.parent && event.propagating)
       this.parent.emit(event, ...args);
+    return res;
   }
 
   broadcast(event, ...args) {
     event = this._mkEvent(event);
-    this.trigger(event, ...args);
+    const res = this.trigger(event, ...args);
     if (!event.propagating) return;
     for (let c of this.children) {
       if (c instanceof Atom) c.broadcast(event, ...args);
     }
+    return res;
   }
 
   /**
@@ -240,22 +242,21 @@ export class Atom extends Eventable {
   unmount() {
     if (!this._parentNode) return;
 
-    this.trigger('unmount:before');
+    return Promise.all(this.broadcast('unmount:before')).then(all => {
+      this._parentNode.removeChild(this.element);
 
-    this._parentNode.removeChild(this.element);
+      // Case for virtual nodes that need to unmount.
+      if (this._insertionParent === this._parentNode) {
+        this.empty(true);
+        this._parentNode.removeChild(this._insertionNode);
+      }
 
-    // Case for virtual nodes that need to unmount.
-    if (this._insertionParent === this._parentNode) {
-      this.empty(true);
-      this._parentNode.removeChild(this._insertionNode);
-    }
-
-    this._mounted = false;
-    this._parentNode = null;
-    this._insertionParent = null;
-    this.trigger('unmount');
-
-    return this;
+      this._mounted = false;
+      this._parentNode = null;
+      this._insertionParent = null;
+      this.trigger('unmount');      
+    });
+    // return this;
   }
 
   removeChild(child) {
@@ -269,20 +270,18 @@ export class Atom extends Eventable {
   }
 
   destroy() {
-    this.broadcast('destroy:before')
+    return this.unmount().then(res => Promise.all(this.broadcast('destroy:before'))).then(all => {
+      this._parentNode = null;
+      this._insertionParent = null;
+      this._insertionNode = null;
+      this.element = null;
 
-    this.unmount();
-
-    this._parentNode = null;
-    this._insertionParent = null;
-    this._insertionNode = null;
-    this.element = null;
-
-    this.broadcast('destroy');
-    this.children = null;
-    this.attrs = null;
-    this._destroyed = true;
-    this._listeners = null;
+      this.broadcast('destroy');
+      this.children = null;
+      this.attrs = null;
+      this._destroyed = true;
+      this._listeners = null;
+    });
   }
 
   /**
