@@ -193,8 +193,12 @@ export class Atom extends Eventable {
     this.trigger('mount:before', parent, before);
 
     this._parentNode = parent;
+    let created = false;
 
-    if (!this.element) this._create();
+    if (!this.element) {
+      created = true;
+      this._create();
+    }
 
     // Insert our element in the DOM.
     parent.insertBefore(this.element, before);
@@ -208,7 +212,7 @@ export class Atom extends Eventable {
     }
 
     this._mounted = false;
-    this.trigger('mount', parent, before);
+    this.trigger('mount', parent, before, created);
     return this;
   }
 
