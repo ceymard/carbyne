@@ -258,7 +258,7 @@ export class Atom extends Eventable {
       this._mounted = false;
       this._parentNode = null;
       this._insertionParent = null;
-      this.trigger('unmount');      
+      this.trigger('unmount');
     });
     // return this;
   }
@@ -294,21 +294,24 @@ export class Atom extends Eventable {
   empty(detach = false) {
     // copy the children array as it will get modified by unmount()
     let children = this.children.slice(0);
+    let prom = [];
 
     if (detach) {
       for (let c of children) {
         if (c instanceof Node) {
           this._parentNode.removeChild(c);
-        } else c.unmount();
+        } else prom.push(c.unmount());
       }
     } else {
       for (let c of children) {
         if (c instanceof Node) {
           this._parentNode.removeChild(c);
-        } else c.destroy();
+        } else prom.push(c.destroy());
       }
     }
     this.children = [];
+
+    return Promise.all(prom);
   }
 
 }
@@ -349,8 +352,7 @@ export class ObservableAtom extends Atom {
       }
 
       // this.removeChildren();
-      this.empty(); // remove all children.
-      this.append(value);
+      this.empty().then(() => this.append(value)); // remove all children.
       this.last_was_text = is_text;
     });
   }
