@@ -1,8 +1,10 @@
 
-export class Controller {
+import {Eventable} from './eventable';
+
+export class Controller extends Eventable {
 
   constructor() {
-
+    super();
     this.atom = null;
   }
 
