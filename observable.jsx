@@ -93,8 +93,34 @@ export class Observable {
       transformer = {get: transformer, set: null};
     }
 
-    const obs = prop ? this.prop(prop) : this;
+    const obs = prop ? this.path(prop) : this;
     return new TransformObservable(obs, transformer);
+  }
+
+  not(prop) {
+    return this.transform(prop, {get: val => !val});
+  }
+
+  isFalse(prop) {
+    return this.transform(prop, {get: val => val === false});
+  }
+
+  isTrue(prop) {
+    return this.transform(prop, {get: val => val === true});
+  }
+
+  and(...obs) {
+    return o(...obs, (...args) => {
+      for (let o of args) if (!o) return false;
+      return true;
+    });
+  }
+
+  or(...obs) {
+    return o(...obs, (...args) => {
+      for (let o of args) if (o) return true;
+      return false;
+    });
   }
 
 }
