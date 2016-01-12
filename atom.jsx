@@ -34,7 +34,7 @@ export class Atom extends Eventable {
    * @param  {Object} attrs    Attributes to the node. Can include observables.
    * @param  {Array} children  The list of children.
    */
-  constructor(tag = null, attrs, children = []) {
+  constructor(tag = null, attrs = {}, children = []) {
     super();
     this.parent = null;
     this.tag = tag;
@@ -332,7 +332,7 @@ export class ObservableAtom extends Atom {
   mount() {
     super(...arguments);
 
-    this.observe(this.obs, (value) => {
+    this.observe(this.obs, value => {
       if (value === undefined) return;
 
       let is_text = !(
@@ -352,7 +352,10 @@ export class ObservableAtom extends Atom {
       }
 
       // this.removeChildren();
-      this.empty().then(() => this.append(value)); // remove all children.
+      this.empty().then(() => {
+        // we may have been destroyed between the call to empty() and now.
+        this.children && this.append(value)
+      }); // remove all children.
       this.last_was_text = is_text;
     });
   }
