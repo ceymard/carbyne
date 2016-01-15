@@ -30,10 +30,12 @@ export class Eventable {
     if (!(name in this._listeners)) this._listeners[name] = [];
     ident++;
     this._listeners[name][ident] = fn;
+    return this
   }
 
   off(name, ident) {
     delete (this._listeners[name]||{})[ident||'---'];
+    return this
   }
 
   once(name, fn) {
@@ -43,6 +45,7 @@ export class Eventable {
       self.off(name, cbk);
     }
     this.on(name, cbk);
+    return this
   }
 
   trigger(event, ...args) {

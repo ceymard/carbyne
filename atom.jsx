@@ -41,6 +41,7 @@ export class Atom extends Eventable {
     this.element = null;
     this.attrs = attrs;
     this.children = [];
+    this.builder = null
 
     this._initial_children = children;
     this._controllers = [];
@@ -353,6 +354,9 @@ export class ObservableAtom extends Atom {
 
       // this.removeChildren();
       this.empty().then(() => {
+        // FIXME we need to check if by any chance we wouldn't be still emptying
+        // the result from before !
+
         // we may have been destroyed between the call to empty() and now.
         this.children && this.append(value)
       }); // remove all children.

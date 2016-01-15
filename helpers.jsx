@@ -91,3 +91,17 @@ export function merge(dst, src) {
   }
   return dst;
 }
+
+export function debounce(fn, ms) {
+  let last_call = new Date
+  let cancel_id = null
+  let self = this
+
+  return function debouncedWrapper(...args) {
+    if (cancel_id) {
+      clearTimeout(cancel_id)
+      cancel_id = null
+    }
+    cancel_id = setTimeout(() => fn.apply(self, args), ms)
+  }
+}

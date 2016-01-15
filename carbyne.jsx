@@ -4,7 +4,7 @@ import {Controller} from './controller';
 import {o, Observable} from './observable';
 import {Atom, ObservableAtom} from './atom';
 import {Eventable} from './eventable';
-var {pathget, pathset, identity, noop, clonedeep, merge} = require('./helpers');
+import {pathget, pathset, identity, noop, clonedeep, merge, debounce} from './helpers'
 
 
 function c(elt, attrs, ...children) {
@@ -24,7 +24,8 @@ function c(elt, attrs, ...children) {
 
   } else if (typeof elt === 'function') {
     // If it is a function, then the element is composite.
-    atom = elt(attrs, children);
+    atom = elt(attrs, children)
+    atom.builder = elt
 
     // The following code forwards diverse and common html attributes automatically.
     if (attrs.class) {
@@ -72,7 +73,7 @@ module.exports = {
   // core
   c, Fragment,
   // observable
-  o, Observable, 
+  o, Observable,
   // atom
   Atom, ObservableAtom,
   // controller
@@ -80,7 +81,7 @@ module.exports = {
   // decorators
   bind, click, cls, transition, ctrl,
   // helpers
-  pathget, pathset, identity, noop, clonedeep, merge,
+  pathget, pathset, identity, noop, clonedeep, merge, debounce,
   // eventable
   Eventable
 };
