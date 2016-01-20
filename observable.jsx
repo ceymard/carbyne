@@ -101,6 +101,22 @@ export class Observable {
     return this.transform(prop, {get: val => !val});
   }
 
+  isNotNull(prop : string) : Observable<boolean> {
+    return this.transform(prop, {get: val => val !== null && val !== undefined})
+  }
+
+  isNull(prop : string) : Observable<boolean> {
+    return this.transform(prop, {get: val => val === null})
+  }
+
+  isUndefined(prop : string) : Observable<boolean> {
+    return this.transform(prop, {get: val => val === undefined})
+  }
+
+  isDefined(prop : string) : Observable<boolean> {
+    return this.transform(prop, {get: val => val !== undefined})
+  }
+
   isFalse(prop) {
     return this.transform(prop, {get: val => val === false});
   }
@@ -109,15 +125,23 @@ export class Observable {
     return this.transform(prop, {get: val => val === true});
   }
 
+  isEmpty(prop) {
+    return this.transform(prop, {get: val => !val});
+  }
+
   and(...obs) {
-    return o(...obs, (...args) => {
+    return o(this, ...obs, (...args) => {
       for (let o of args) if (!o) return false;
       return true;
     });
   }
 
+  equals(prop, value) {
+    return this.transform(prop, {get: val => val === value})
+  }
+
   or(...obs) {
-    return o(...obs, (...args) => {
+    return o(this, ...obs, (...args) => {
       for (let o of args) if (o) return true;
       return false;
     });
