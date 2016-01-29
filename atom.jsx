@@ -91,7 +91,7 @@ export class Atom extends Eventable {
 
   listen(event, cbk) {
     if (!this.element)
-      this.on('create', this.listen.bind(this, obs, cbk));
+      this.on('create', this.listen.bind(this, event, cbk));
     else {
       this.element.addEventListener(event, cbk);
       this.on('destroy:before', () => this.element.removeEventListener(event, cbk));

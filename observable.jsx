@@ -97,6 +97,26 @@ export class Observable {
     return new TransformObservable(obs, transformer);
   }
 
+  gt(prop, value) {
+    return this.transform(prop, {get: val => val > value})
+  }
+
+  lt(prop, value) {
+    return this.transform(prop, {get: val => val < value})
+  }
+
+  eq(prop, value) {
+    return this.transform(prop, {get: val => val == value})
+  }
+
+  gte(prop, value) {
+    return this.transform(prop, {get: val => val >= value})
+  }
+
+  lte(prop, value) {
+    return this.transform(prop, {get: val => val <= value})
+  }
+
   not(prop) {
     return this.transform(prop, {get: val => !val});
   }
@@ -132,7 +152,7 @@ export class Observable {
   and(...obs) {
     return o(this, ...obs, (...args) => {
       for (let o of args) if (!o) return false;
-      return true;
+      return args[args.length - 1];
     });
   }
 
@@ -142,7 +162,7 @@ export class Observable {
 
   or(...obs) {
     return o(this, ...obs, (...args) => {
-      for (let o of args) if (o) return true;
+      for (let o of args) if (o) return o;
       return false;
     });
   }
