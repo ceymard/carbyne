@@ -331,7 +331,7 @@ export class ObservableAtom extends Atom {
   }
 
   mount() {
-    super(...arguments);
+    super.mount(...arguments);
 
     this.observe(this.obs, value => {
       if (value === undefined) return;

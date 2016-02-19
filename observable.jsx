@@ -231,7 +231,7 @@ export class PropObservable extends Observable {
       });
     }
 
-    return super(...arguments);
+    return super.addObserver(...arguments);
   }
 
 }
@@ -349,20 +349,20 @@ export class DependentObservable extends Observable {
           continue;
         }
 
-        this._unregister.push(obs.addObserver((idx, value) => {
+        this._unregister.push(obs.addObserver(((idx, value) => {
           this._resolved[idx] = value;
           this._refresh();
-        }.bind(this, idx)));
+        }).bind(this, idx)));
       }
       this._ignore_updates = false;
       this._refresh();
     }
 
-    return super(...arguments);
+    return super.addObserver(...arguments);
   }
 
   removeObserver() {
-    super(...arguments);
+    super.removeObserver(...arguments);
     if (this._observers.length === 0) {
       for (let un of this._unregister) un();
       this._unregister = [];
