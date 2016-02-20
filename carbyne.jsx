@@ -6,9 +6,16 @@ import {Atom, ObservableAtom} from './atom';
 import {Eventable} from './eventable';
 import {pathget, pathset, identity, noop, clonedeep, merge, debounce} from './helpers'
 
+var _re_elt_name = /^[^\.#]*/
+var _re_cls_or_id = /[\.#][^\.#]+/g
+
+var _add_cls = (attrs, added) => {
+  attrs.class = attrs.class ? o(attrs.class, added, (o1, o2) => `${o1} ${o2}`) : added
+}
 
 function c(elt, attrs, ...children) {
-  let atom = null;
+  var atom = null;
+
   attrs = attrs || {};
 
   let decorators = attrs.$$;
@@ -19,6 +26,18 @@ function c(elt, attrs, ...children) {
   }
 
   if (typeof elt === 'string') {
+
+    // Add to class the .<class name> part or set the id if the provided
+    // string had a #<id> in it.
+    elt.replace(_re_cls_or_id, match => {
+      if (match[0] === '.') {
+        console.log(match)
+        _add_cls(attrs, match.slice(1))
+      } else attrs.id = match.slice(1)
+    })
+
+    elt = _re_elt_name.exec(elt)[0] || 'div'
+
     // If we have a string, then it is a simple html element.
     atom = new Atom(elt, attrs, children);
 
@@ -33,7 +52,8 @@ function c(elt, attrs, ...children) {
         // NOTE the fact that we use o() does not necessarily create an Observable ;
         // if neither of the class attributes are, then the function returns directly
         // with the value.
-        atom.attrs.class = o(attrs.class, atom.attrs.class, (c1, c2) => `${c1} ${c2}`);
+        _add_cls(atom.attrs, attrs.class)
+        // atom.attrs.class = o(attrs.class, atom.attrs.class, (c1, c2) => `${c1} ${c2}`);
       else atom.attrs.class = attrs.class;
     }
 
