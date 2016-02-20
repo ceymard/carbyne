@@ -19,6 +19,20 @@ function _get_ancestry(p1, p2) {
   return IS_UNRELATED;
 }
 
+// made to be used by Observable transformers so that they
+// give booleans or use transformer functions when true
+function _bool_or_tf(prop, cond, tf) {
+  if (typeof prop !== 'string') {
+    tf = prop
+    prop = null
+  }
+
+  return this.transform(prop, val => {
+    if (tf) return cond(val) ? tf(val) : null
+    return cond(val)
+  })
+}
+
 /**
  *
  */
@@ -121,28 +135,39 @@ export class Observable {
     return this.transform(prop, {get: val => !val});
   }
 
-  isNotNull(prop : string) : Observable<boolean> {
-    return this.transform(prop, {get: val => val !== null && val !== undefined})
+  /**
+   * True if the observed value is neither null, undefined or empty string.
+   */
+  exists(prop : string, tf : ?Function) : Observable<boolean> {
+    return _bool_or_tf.call(this,
+      prop,
+      val => val !== null && val !== 0 && val !== '' && val !== undefined,
+      tf)
+    // return this.transform(prop, {get: val => val != null})
   }
 
-  isNull(prop : string) : Observable<boolean> {
-    return this.transform(prop, {get: val => val === null})
+  isNotNull(prop : string, tf : ?Function) : Observable<boolean> {
+    return _bool_or_tf.call(this, prop, val => val !== null && val !== undefined, tf)
   }
 
-  isUndefined(prop : string) : Observable<boolean> {
-    return this.transform(prop, {get: val => val === undefined})
+  isNull(prop : string, tf : ?Function) : Observable<boolean> {
+    return _bool_or_tf.call(this, prop, val => val === null, tf)
   }
 
-  isDefined(prop : string) : Observable<boolean> {
-    return this.transform(prop, {get: val => val !== undefined})
+  isUndefined(prop : string, tf : ?Function) : Observable<boolean> {
+    return _bool_or_tf.call(this, prop, val => val === undefined, tf)
   }
 
-  isFalse(prop) {
-    return this.transform(prop, {get: val => val === false});
+  isDefined(prop : string, tf : ?Function) : Observable<boolean> {
+    return _bool_or_tf.call(this, prop, val => val !== undefined, tf)
   }
 
-  isTrue(prop) {
-    return this.transform(prop, {get: val => val === true});
+  isFalse(prop, tf : ?Function) {
+    return _bool_or_tf.call(this, prop, val => val === false)
+  }
+
+  isTrue(prop, tf : ?Function) {
+    return _bool_or_tf.call(prop, val => val === true, tf)
   }
 
   isEmpty(prop) {
