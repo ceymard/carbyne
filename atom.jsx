@@ -325,13 +325,14 @@ export class Atom extends Eventable {
 export class ObservableAtom extends Atom {
 
   constructor(obs) {
-    super(null);
-    this.obs = obs;
-    this.last_was_text = false;
+    super(null)
+    this.obs = obs
+    this.last_was_text = false
+    this.next_value = null
   }
 
   mount() {
-    super.mount(...arguments);
+    super.mount(...arguments)
 
     this.observe(this.obs, value => {
       if (value === undefined) return;
@@ -342,26 +343,27 @@ export class ObservableAtom extends Atom {
         Array.isArray(value) ||
         typeof value === 'function' ||
         value instanceof Observable
-      );
+      )
 
-      if (is_text && this.last_was_text) {
-        // Small optimization in the case that we just have to modify a text node
-        // to avoid removing and adding Nodes around by reusing the last one we
-        // were using.
-        this.children[0].textContent = forceString(value);
-        return;
-      }
+      this.next_value = value
+      if (is_text)
+        this.next_value = forceString(value)
 
       // this.removeChildren();
       this.empty().then(() => {
-        // FIXME we need to check if by any chance we wouldn't be still emptying
-        // the result from before !
+        let next_is_text = typeof this.next_value === 'string'
 
-        // we may have been destroyed between the call to empty() and now.
-        this.children && this.append(value)
+        if (this.children) {
+          if (this.children.length > 0 && next_is_text && this.last_was_text) {
+            this.children[0].textContent = this.next_value
+          } else
+            this.children && this.append(value)
+          this.last_was_text = next_is_text
+        }
+
+        this.next_value = null
       }); // remove all children.
-      this.last_was_text = is_text;
-    });
+    })
   }
 
 }
