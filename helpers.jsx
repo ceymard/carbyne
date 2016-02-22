@@ -63,9 +63,9 @@ export function forceString(val) {
 }
 
 
-export function pathjoin() {
+export function pathjoin(...args) {
   const pathes = [];
-  for (let pth of arguments) {
+  for (let pth of args) {
     if (pth) pathes.push(pth);
   }
   return pathes.join('.');
