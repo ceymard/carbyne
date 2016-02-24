@@ -167,11 +167,11 @@ export class Observable {
   }
 
   isTrue(prop, tf : ?Function) {
-    return _bool_or_tf.call(prop, val => val === true, tf)
+    return _bool_or_tf.call(this, prop, val => val === true, tf)
   }
 
   isEmpty(prop) {
-    return this.transform(prop, {get: val => !val});
+    return _bool_or_tf.call(this, prop, val => !val);
   }
 
   and(...obs) {
@@ -182,7 +182,7 @@ export class Observable {
   }
 
   equals(prop, value) {
-    return this.transform(prop, {get: val => val === value})
+    return _bool_or_tf.call(this, prop, val => val === value)
   }
 
   or(...obs) {
