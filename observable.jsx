@@ -192,6 +192,19 @@ export class Observable {
     });
   }
 
+  map(prop, fn) {
+    return this.transform(prop, {get: arr => Array.isArray(arr) ? arr.map(fn) : []})
+  }
+
+  filter(prop, fn) {
+    // FIXME should we warn the user if something is given that is not an array ?
+    // for instance the value could be an array, null or undefined, but not anything
+    // else (which would then generate a warning in the console ?)
+    return this.transform(prop, {get: arr => Array.isArray(arr) ? arr.map(filter) : []})
+  }
+
+  // FIXME should we do reduce ?
+
 }
 
 Observable.prototype.tf = Observable.prototype.transform;
