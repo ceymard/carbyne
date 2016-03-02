@@ -329,6 +329,7 @@ export class ObservableAtom extends Atom {
     this.obs = obs
     this.last_was_text = false
     this.next_value = null
+    this.emptying = false
   }
 
   mount() {
@@ -349,20 +350,13 @@ export class ObservableAtom extends Atom {
       if (is_text)
         this.next_value = forceString(value)
 
-      // this.removeChildren();
-      this.empty().then(() => {
-        let next_is_text = typeof this.next_value === 'string'
-
-        if (this.children) {
-          if (this.children.length > 0 && next_is_text && this.last_was_text) {
-            this.children[0].textContent = this.next_value
-          } else
-            this.children && this.append(value)
-          this.last_was_text = next_is_text
-        }
-
-        this.next_value = null
-      }); // remove all children.
+      if (!this.emptying) {
+        this.emptying = true
+        this.empty().then(() => {
+          if (this.children) this.append(this.next_value)
+          this.emptying = false
+        })
+      }
     })
   }
 

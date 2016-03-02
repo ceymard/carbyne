@@ -107,7 +107,7 @@ export class Observable {
       transformer = {get: transformer, set: null};
     }
 
-    const obs = prop ? this.path(prop) : this;
+    const obs = prop ? this.prop(prop) : this;
     return new TransformObservable(obs, transformer);
   }
 
@@ -193,6 +193,10 @@ export class Observable {
   }
 
   map(prop, fn) {
+    if (fn === undefined) {
+      fn = prop
+      prop = null
+    }
     return this.transform(prop, {get: arr => Array.isArray(arr) ? arr.map(fn) : []})
   }
 
@@ -200,6 +204,10 @@ export class Observable {
     // FIXME should we warn the user if something is given that is not an array ?
     // for instance the value could be an array, null or undefined, but not anything
     // else (which would then generate a warning in the console ?)
+    if (fn === undefined) {
+      fn = prop
+      prop = null
+    }
     return this.transform(prop, {get: arr => Array.isArray(arr) ? arr.map(filter) : []})
   }
 
@@ -216,7 +224,7 @@ export class PropObservable extends Observable {
 
   constructor(obs, prop) {
     super(undefined);
-    this._prop = prop;
+    this._prop = "" + prop; // force prop as a string
     this._obs = obs;
   }
 
