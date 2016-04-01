@@ -31,7 +31,6 @@ function c(elt, attrs, ...children) {
     // string had a #<id> in it.
     elt.replace(_re_cls_or_id, match => {
       if (match[0] === '.') {
-        console.log(match)
         _add_cls(attrs, match.slice(1))
       } else attrs.id = match.slice(1)
     })
