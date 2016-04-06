@@ -361,7 +361,7 @@ export class DependentObservable extends Observable {
   }
 
   get(prop) {
-    this._refresh();
+    if (this._observers.length === 0) this._refresh();
     return pathget(this._value, prop);
   }
 
