@@ -13,6 +13,14 @@ export class Controller extends Eventable {
     this.atom = null;
   }
 
+  observe() {
+    return this.atom.observe(...arguments)
+  }
+
+  getController() {
+    return this.atom.getController(...arguments)
+  }
+
   setAtom(atom) {
     this.atom = atom;
     if (this.onCreate) atom.on('create', this.onCreate.bind(this));
