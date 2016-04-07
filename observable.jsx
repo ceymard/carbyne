@@ -66,14 +66,17 @@ export class Observable {
     }
 
     if (changed) {
-      const val = this._value;
-      for (let obs of this._observers) {
-        // prop is given so that the linked observables know
-        // if the change interests them or not.
-        obs(val, prop);
-      }
+      this._change(prop)
     }
 
+  }
+
+  _change(prop) {
+    const val = this._value
+    const obss = this._observers
+    prop = (prop||'').toString()
+    for (var i = 0; i < obss.length; i++)
+      obss[i](val, prop)
   }
 
   addObserver(fn) {
@@ -209,6 +212,56 @@ export class Observable {
       prop = null
     }
     return this.transform(prop, {get: arr => Array.isArray(arr) ? arr.map(filter) : []})
+  }
+
+  /////////////////////////////////////////////////////////////////////////
+  // Some array functions
+
+  push() {
+    let res = this._value.push(...arguments)
+    this._change(this._value.length - 1)
+    this._change('length')
+    return res
+  }
+
+  pop() {
+    let res = this._value.pop()
+    this._change(this._value.length)
+    this._change('length')
+    return res
+  }
+
+  shift() {
+    let res = this._value.shift(...arguments)
+    this._change(null)
+    this._change('length')
+    return res
+  }
+
+  unshift() {
+    let res = this._value.unshift(...arguments)
+    this._change(null)
+    this._change('length')
+    return res
+  }
+
+  sort() {
+    let res = this._value.sort(...arguments)
+    this._change(null)
+    return res
+  }
+
+  splice() {
+    let res = this._value.splice(...arguments)
+    this._change(null)
+    this._change('length')
+    return res
+  }
+
+  reverse() {
+    let res = this._value.reverse(...arguments)
+    this._change(null)
+    return res
   }
 
   // FIXME should we do reduce ?
