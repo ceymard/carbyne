@@ -10,10 +10,10 @@
  */
 export function pathget(obj, path) {
   if (!path) return obj;
-  path = path.split('.');
-  for (let p of path) {
+  path = path.toString().split('.');
+  for (var i = 0; i < path.length; i++) {
     if (!obj) break;
-    obj = obj[p];
+    obj = obj[path[i]];
   }
   return obj;
 }
@@ -29,12 +29,12 @@ export function pathget(obj, path) {
  * @param  {Any} value The value the property will be set to.
  */
 export function pathset(obj, path, value) {
-  path = path.split('.');
+  path = (path||'').toString().split('.');
   let last = path.pop();
-  for (let p of path) {
+  for (var i = 0; i < path.length; i++) {
     // create objects as we need it.
-    if (!obj[p]) obj[p] = {};
-    obj = obj[p];
+    if (!obj[path[i]]) obj[path[i]] = {};
+    obj = obj[path[i]];
   }
   const changed = obj[last] !== value;
   obj[last] = value;
