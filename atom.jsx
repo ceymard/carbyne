@@ -248,7 +248,7 @@ export class Atom extends Eventable {
     if (!this._parentNode) return;
 
     return Promise.all(this.broadcast('unmount:before')).then(all => {
-      this.parent.removeChild(this)
+      if (this.parent) this.parent.removeChild(this)
       this._parentNode.removeChild(this.element);
 
       // Case for virtual nodes that need to unmount.
