@@ -13,16 +13,22 @@ var _add_cls = (attrs, added) => {
   attrs.class = attrs.class ? o(attrs.class, added, (o1, o2) => `${o1} ${o2}`) : added
 }
 
-function c(elt, attrs, ...children) {
-  var atom = null;
+function c(elt, attrs) {
+  var atom = null
 
-  attrs = attrs || {};
+  var special_attrs = ['id', 'tabindex']
+  var i = null
+  var children = []
+  for (i = 2; i < arguments.length; i++)
+    children.push(arguments[i])
 
-  let decorators = attrs.$$;
+  attrs = attrs || {}
+
+  let decorators = attrs.$$
 
   if (decorators) {
-    delete attrs.$$;
-    if (!Array.isArray(decorators)) decorators = [decorators];
+    delete attrs.$$
+    if (!Array.isArray(decorators)) decorators = [decorators]
   }
 
   if (typeof elt === 'string') {
@@ -38,7 +44,7 @@ function c(elt, attrs, ...children) {
     elt = _re_elt_name.exec(elt)[0] || 'div'
 
     // If we have a string, then it is a simple html element.
-    atom = new Atom(elt, attrs, children);
+    atom = new Atom(elt, attrs, children)
 
   } else if (typeof elt === 'function') {
     // If it is a function, then the element is composite.
@@ -59,23 +65,25 @@ function c(elt, attrs, ...children) {
     // Forward the style attriute.
     if (attrs.style) {
       if (atom.attrs.style)
-        atom.attrs.style = o(attrs.style, atom.attrs.style, (c1, c2) => `${c1};${c2}`);
-      else atom.attrs.style = attrs.style;
+        atom.attrs.style = o(attrs.style, atom.attrs.style, (c1, c2) => `${c1};${c2}`)
+      else atom.attrs.style = attrs.style
     }
 
-    for (let att of ['id', 'tabindex']) {
-      if (attrs[att]) // The last one to speak wins
-        atom.attrs[att] = attrs[att];
+    for (i = 0; i < special_attrs.length; i++) {
+      if (attrs[special_attrs[i]]) // The last one to speak wins
+        atom.attrs[special_attrs[i]] = attrs[special_attrs[i]]
     }
 
   } else {
     throw new Error('wrong type')
   }
 
+  var decorated = null
+
   // A decorator generally sets up events and add controllers
   if (decorators) {
-    for (let d of decorators) {
-      let decorated = d(atom);
+    for (i = 0; i < decorators.length; i++) {
+      decorated = decorators[i](atom);
       atom = decorated instanceof Atom ? decorated : atom;
     }
   }

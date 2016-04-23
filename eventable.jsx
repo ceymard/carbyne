@@ -21,7 +21,8 @@ export class Eventable {
         stopPropagation() { this.propagating = false; },
     };
     let e = {};
-    for (let x in event)
+    var x = null
+    for (x in event)
       e[x] = event[x];
     return e;
   }
@@ -50,11 +51,13 @@ export class Eventable {
 
   trigger(event, ...args) {
     event = this._mkEvent(event);
-    const result = [];
-    let listeners = this._listeners[event.type] || {};
+    var result = [];
+    var listeners = this._listeners[event.type] || {};
+    var a = [event].concat(args)
 
-    for (let id in listeners) {
-      result.push(listeners[id].call(this, event, ...args));
+    for (var id in listeners) {
+      // result.push(listeners[id].call(this, event, ...args));
+      result.push(listeners[id].apply(this, a))
     }
 
     return result;

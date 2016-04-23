@@ -266,6 +266,27 @@ export class Observable {
 
   // FIXME should we do reduce ?
 
+  // Some basic modification functions
+  inc(inc) {
+    this.set(this._value + inc)
+  }
+
+  dec(dec) {
+    this.set(this._value - dec)
+  }
+
+  mult(coef) {
+    this.set(this._value * coef)
+  }
+
+  div(coef) {
+    this.set(this._value / coef)
+  }
+
+  mod(m) {
+    this.set(this._value % m)
+  }
+
 }
 
 Observable.prototype.tf = Observable.prototype.transform;
@@ -302,8 +323,10 @@ export class PropObservable extends Observable {
     const subprop = ancestry === IS_ANCESTOR ? prop.replace(this._prop + '.', '') : null;
 
     if (changed) {
-      for (let obs of this._observers)
-        obs(new_val, subprop);
+      var obs = this._observers
+      var i = null
+      for (i = 0; i < obs.length; i++)
+        obs[i](new_val, subprop);
     }
   }
 
@@ -359,9 +382,12 @@ export class TransformObservable extends Observable {
     const old_val = this._value;
     const new_val = this._value = this._transformer.get(value);
     const changed = old_val !== new_val;
+    var i = null
+    var obs = this._observers
 
     if (changed) {
-      for (let obs of this._observers) obs(new_val, null);
+      var i = null
+      for (i = 0; i < obs.length; i++) obs[i](new_val, null);
     }
   }
 
@@ -427,10 +453,12 @@ export class DependentObservable extends Observable {
     const old_val = this._value;
     const resolved = this._resolved || this._deps.map(dep => o.get(dep));
     const new_val = this._value = this._fn(...resolved);
+    const obs = this._observers
+    var i = 0
 
     if (old_val === new_val) return;
 
-    for (let obs of this._observers) obs(new_val);
+    for (i = 0; i < obs.length; i++) obs[i](new_val);
   }
 
   addObserver(fn) {
@@ -501,9 +529,10 @@ export function o(...args) {
   let deps = Array.prototype.slice.call(arguments, 0, arguments.length - 1);
   let has_obs = false;
 
+  let i = 0
   // See if one of the dependency has observables.
-  for (let d of deps) {
-    if (d instanceof Observable) {
+  for (i = 0; i < deps.length; i++) {
+    if (deps[i] instanceof Observable) {
       has_obs = true;
       break;
     }

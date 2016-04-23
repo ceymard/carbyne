@@ -228,7 +228,8 @@ export class Atom extends Eventable {
     }
 
     if (Array.isArray(child)) {
-      for (let c of child) this.append(c);
+      var i = null
+      for (i = 0; i < child.length; i++) this.append(child[i]);
     } else if (child instanceof Node) {
       this.children.push(child);
       this._insertionParent.insertBefore(child, this._insertionNode);
