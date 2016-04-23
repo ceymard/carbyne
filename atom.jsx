@@ -219,9 +219,15 @@ export class Atom extends Eventable {
 
   append(child) {
 
+
     if (child === undefined) return;
 
     if (typeof child === 'function') child = child();
+
+    if (!this.element) {
+      this._initial_children.push(child)
+      return
+    }
 
     if (child instanceof Observable) {
       child = new ObservableAtom(child);
