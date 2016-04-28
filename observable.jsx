@@ -123,7 +123,7 @@ export class Observable {
   }
 
   eq(prop, value) {
-    return this.transform(prop, {get: val => val == value})
+    return this.transform(prop, {get: val => val === value})
   }
 
   gte(prop, value) {
