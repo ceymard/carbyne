@@ -1,4 +1,4 @@
-const {pathget, pathset, identity, pathjoin} = require('./helpers');
+const {pathget, pathset, identity, pathjoin, exists} = require('./helpers');
 
 
 const IS_CHILD = 1;
@@ -95,7 +95,7 @@ export class Observable {
   }
 
   prop(prop) {
-    if (!prop) return this;
+    if (!exists(prop)) return this;
     return new PropObservable(this, prop);
   }
 
@@ -115,26 +115,32 @@ export class Observable {
   }
 
   gt(prop, value) {
+    if (arguments.length === 1) { value = prop; prop = null }
     return this.transform(prop, {get: val => val > value})
   }
 
   lt(prop, value) {
+    if (arguments.length === 1) { value = prop; prop = null }
     return this.transform(prop, {get: val => val < value})
   }
 
   eq(prop, value) {
+    if (arguments.length === 1) { value = prop; prop = null }
     return this.transform(prop, {get: val => val === value})
   }
 
   gte(prop, value) {
+    if (arguments.length === 1) { value = prop; prop = null }
     return this.transform(prop, {get: val => val >= value})
   }
 
   lte(prop, value) {
+    if (arguments.length === 1) { value = prop; prop = null }
     return this.transform(prop, {get: val => val <= value})
   }
 
   not(prop) {
+    if (arguments.length === 1) { value = prop; prop = null }
     return this.transform(prop, {get: val => !val});
   }
 

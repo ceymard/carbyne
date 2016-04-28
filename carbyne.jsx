@@ -4,7 +4,7 @@ import {Controller} from './controller';
 import {o, Observable} from './observable';
 import {Atom, ObservableAtom} from './atom';
 import {Eventable} from './eventable';
-import {pathget, pathset, identity, noop, clonedeep, merge, debounce} from './helpers'
+import {pathget, pathset, identity, noop, clonedeep, merge, debounce, exists} from './helpers'
 
 var _re_elt_name = /^[^\.#]*/
 var _re_cls_or_id = /[\.#][^\.#]+/g
@@ -108,7 +108,7 @@ module.exports = {
   // decorators
   bind, click, cls, transition, ctrl,
   // helpers
-  pathget, pathset, identity, noop, clonedeep, merge, debounce,
+  pathget, pathset, identity, noop, clonedeep, merge, debounce, exists,
   // eventable
   Eventable
 };
