@@ -27,6 +27,9 @@ export class Controller extends Eventable {
     if (this.onMount) atom.on('mount', this.onMount.bind(this));
     if (this.onUnmount) atom.on('unmount', this.onUnmount.bind(this));
     if (this.onDestroy) atom.on('destroy', this.onDestroy.bind(this));
-  }
+    if (this.onCreateBefore) atom.on('create:before', this.onCreateBefore.bind(this));
+    if (this.onMountBefore) atom.on('mount:before', this.onMountBefore.bind(this));
+    if (this.onUnmountBefore) atom.on('unmount:before', this.onUnmountBefore.bind(this));
+    if (this.onDestroyBefore) atom.on('destroy:before', this.onDestroyBefore.bind(this));  }
 
 }
