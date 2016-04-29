@@ -20,7 +20,7 @@ export function click(cbk) {
     return function clickDecorator(atom) {
 
       atom.once('create', function () {
-        this.listen('click', cbk.bind(atom));
+        this.listen('click', ev => cbk.call(atom, ev, atom));
       });
 
       return atom;
