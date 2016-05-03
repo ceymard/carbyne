@@ -13,6 +13,10 @@ export class Controller extends Eventable {
     this.atom = null
   }
 
+  listen() {
+    return this.atom.listen(...arguments)
+  }
+
   observe() {
     return this.atom.observe(...arguments)
   }
