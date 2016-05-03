@@ -12,13 +12,13 @@ export function exists(obj) {
  * @return {Any}  The value of the property.
  */
 export function pathget(obj, path) {
-  if (!exists(path)) return obj;
-  path = path.toString().split('.');
+  if (!exists(path)) return obj
+  path = path.toString().split('.')
   for (var i = 0; i < path.length; i++) {
-    if (!obj) break;
-    obj = obj[path[i]];
+    if (!obj) break
+    obj = obj[path[i]]
   }
-  return obj;
+  return obj
 }
 
 
@@ -32,16 +32,16 @@ export function pathget(obj, path) {
  * @param  {Any} value The value the property will be set to.
  */
 export function pathset(obj, path, value) {
-  path = (!exists(path) ? '' : path).toString().split('.');
-  let last = path.pop();
+  path = (!exists(path) ? '' : path).toString().split('.')
+  let last = path.pop()
   for (var i = 0; i < path.length; i++) {
     // create objects as we need it.
-    if (!obj[path[i]]) obj[path[i]] = {};
-    obj = obj[path[i]];
+    if (!obj[path[i]]) obj[path[i]] = {}
+    obj = obj[path[i]]
   }
-  const changed = obj[last] !== value;
-  obj[last] = value;
-  return changed;
+  const changed = obj[last] !== value
+  obj[last] = value
+  return changed
 }
 
 
@@ -56,43 +56,43 @@ export function noop() { }
  * @param  {Any} i The value that will be returned
  * @return {Any}   i
  */
-export function identity(i) { return i; }
+export function identity(i) { return i }
 
 
 export function forceString(val) {
-  if (val === undefined || val === null) val = '';
-  else if (typeof val === 'object') val = JSON.stringify(val);
-  return val.toString();
+  if (val === undefined || val === null) val = ''
+  else if (typeof val === 'object') val = JSON.stringify(val)
+  return val.toString()
 }
 
 
 export function pathjoin(...args) {
-  const pathes = [];
+  const pathes = []
   for (let pth of args) {
-    if (pth) pathes.push(pth);
+    if (pth) pathes.push(pth)
   }
-  return pathes.join('.');
+  return pathes.join('.')
 }
 
 
 export function clonedeep(obj) {
   if (obj instanceof Array)
-    return obj.map(elt => clonedeep(elt));
+    return obj.map(elt => clonedeep(elt))
   if ('object' === typeof obj) {
-    var res = {};
+    var res = {}
     for (var prop in obj)
-      res[prop] = clonedeep(obj[prop]);
-    return res;
+      res[prop] = clonedeep(obj[prop])
+    return res
   }
-  return obj; // simple type, does not need to be cloned
+  return obj // simple type, does not need to be cloned
 }
 
 
 export function merge(dst, src) {
   for (var x in src) {
-    dst[x] = src[x];
+    dst[x] = src[x]
   }
-  return dst;
+  return dst
 }
 
 export function debounce(fn, ms) {

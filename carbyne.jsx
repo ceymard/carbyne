@@ -1,9 +1,9 @@
 
-import {bind, click, cls, transition, ctrl} from './decorators';
-import {Controller} from './controller';
-import {o, Observable} from './observable';
-import {Atom, ObservableAtom} from './atom';
-import {Eventable} from './eventable';
+import {bind, click, cls, transition, ctrl} from './decorators'
+import {Controller} from './controller'
+import {o, Observable} from './observable'
+import {Atom, ObservableAtom} from './atom'
+import {Eventable} from './eventable'
 import {pathget, pathset, identity, noop, clonedeep, merge, debounce, exists} from './helpers'
 
 var _re_elt_name = /^[^\.#]*/
@@ -83,17 +83,21 @@ function c(elt, attrs) {
   // A decorator generally sets up events and add controllers
   if (decorators) {
     for (i = 0; i < decorators.length; i++) {
-      decorated = decorators[i](atom);
-      atom = decorated instanceof Atom ? decorated : atom;
+      if (decorators[i] instanceof Controller) {
+        decorators[i].setAtom(atom)
+      } else {
+        decorated = decorators[i](atom)
+        atom = decorated instanceof Atom ? decorated : atom
+      }
     }
   }
 
   // At this point, we have an atom that is ready to be inserted.
-  return atom;
+  return atom
 }
 
 function Fragment(attrs, children) {
-  return children;
+  return children
 }
 
 module.exports = {
@@ -111,4 +115,4 @@ module.exports = {
   pathget, pathset, identity, noop, clonedeep, merge, debounce, exists,
   // eventable
   Eventable
-};
+}
