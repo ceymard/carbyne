@@ -2,7 +2,7 @@
 import {bind, click, cls, transition, ctrl} from './decorators'
 import {Controller} from './controller'
 import {o, Observable} from './observable'
-import {Atom, ObservableAtom} from './atom'
+import {Atom, ObservableAtom, VirtualAtom} from './atom'
 import {Eventable} from './eventable'
 import {pathget, pathset, identity, noop, clonedeep, merge, debounce, exists} from './helpers'
 
@@ -106,7 +106,7 @@ module.exports = {
   // observable
   o, Observable,
   // atom
-  Atom, ObservableAtom,
+  Atom, ObservableAtom, VirtualAtom,
   // controller
   Controller,
   // decorators
