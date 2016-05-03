@@ -101,23 +101,18 @@ export class Atom extends Eventable {
   /////////////////////////////////////////////////////////////////
 
   /**
-   * Get a controller by its class name, the first one that is met.
-   * Optionnally get all of them and or recurse the parents to get
-   * instances.
+   * Get a controller by its class type, the first one that is met.
    *
    * @param  {Function} cls The controller class.
    * @param  {Object} opts Options
-   *                       all: boolean
+   *
    *                       recursive: boolean
    * @return {Controller}      The controller instance if found.
    */
-  getController(cls, opts = {}) {
+  getController(cls, recursive = true) {
 
     let res = null
     let atom = this
-
-    let all = opts.all
-    let recursive = opts.recursive != false
 
     while (atom) {
       for (let ctrl of atom._controllers) {
@@ -332,6 +327,7 @@ export class Atom extends Eventable {
   }
 
 }
+
 
 /**
  * An ObservableAtom is a node built on an observable.
