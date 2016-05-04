@@ -67,7 +67,7 @@ export class RepeaterAtom extends VirtualAtom {
  */
 export function Repeat(obs, fn) {
 	if (typeof fn !== 'function') {
-		return new Repeater(obs.obs, obs.render)
+		return new RepeaterAtom(obs.obs, obs.render)
 	}
-	return new Repeater(obs, fn)
+	return new RepeaterAtom(obs, fn)
 }
