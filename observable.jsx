@@ -147,7 +147,7 @@ export class Observable {
   /**
    * True if the observed value is neither null, undefined or empty string.
    */
-  exists(prop : string, tf : ?Function) : Observable<boolean> {
+  exists(prop, tf) {
     return _bool_or_tf.call(this,
       prop,
       val => val !== null && val !== 0 && val !== '' && val !== undefined,
@@ -155,27 +155,27 @@ export class Observable {
     // return this.transform(prop, {get: val => val != null})
   }
 
-  isNotNull(prop : string, tf : ?Function) : Observable<boolean> {
+  isNotNull(prop, tf) {
     return _bool_or_tf.call(this, prop, val => val !== null && val !== undefined, tf)
   }
 
-  isNull(prop : string, tf : ?Function) : Observable<boolean> {
+  isNull(prop, tf) {
     return _bool_or_tf.call(this, prop, val => val === null, tf)
   }
 
-  isUndefined(prop : string, tf : ?Function) : Observable<boolean> {
+  isUndefined(prop, tf) {
     return _bool_or_tf.call(this, prop, val => val === undefined, tf)
   }
 
-  isDefined(prop : string, tf : ?Function) : Observable<boolean> {
+  isDefined(prop, tf) {
     return _bool_or_tf.call(this, prop, val => val !== undefined, tf)
   }
 
-  isFalse(prop, tf : ?Function) {
+  isFalse(prop, tf) {
     return _bool_or_tf.call(this, prop, val => val === false)
   }
 
-  isTrue(prop, tf : ?Function) {
+  isTrue(prop, tf) {
     return _bool_or_tf.call(this, prop, val => val === true, tf)
   }
 
