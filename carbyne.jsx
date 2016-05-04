@@ -5,6 +5,7 @@ export {o, Observable} from './observable'
 export {Atom, ObservableAtom, VirtualAtom} from './atom'
 export {Eventable} from './eventable'
 export {pathget, pathset, identity, noop, clonedeep, merge, debounce, exists} from './helpers'
+export {RepeaterAtom, Repeat} from './repeat'
 
 import {Controller} from './controller'
 import {Atom} from './atom'
@@ -17,6 +18,18 @@ var _add_cls = (attrs, added) => {
   attrs.class = attrs.class ? o(attrs.class, added, (o1, o2) => `${o1} ${o2}`) : added
 }
 
+
+/**
+ * The main carbyne function.
+ *
+ * Can be called pure .jsx style or directly with some support for hyperscript-like syntax ;
+ *
+ * c('.class') gives an Atom that holds <div class='class'></div>
+ *
+ * @param  {String|Function} elt  Either the tag name or a function that returns an Atom
+ * @param  {Object} attrs The attributes that should go onto the final Atom.
+ * @return {Atom} The instanciated Atom.
+ */
 export function c(elt, attrs) {
   var atom = null
 
@@ -103,20 +116,3 @@ export function c(elt, attrs) {
 export function Fragment(attrs, children) {
   return children
 }
-
-// module.exports = {
-//   // core
-//   c, Fragment,
-//   // observable
-//   // o, Observable,
-//   // atom
-//   Atom, ObservableAtom, VirtualAtom,
-//   // controller
-//   Controller,
-//   // decorators
-//   bind, click, cls, transition, ctrl,
-//   // helpers
-//   pathget, pathset, identity, noop, clonedeep, merge, debounce, exists,
-//   // eventable
-//   Eventable
-// }
