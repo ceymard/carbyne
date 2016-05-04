@@ -1,10 +1,14 @@
 
-import {bind, click, cls, transition, ctrl} from './decorators'
+export {bind, click, cls, transition, ctrl} from './decorators'
+export {Controller} from './controller'
+export {o, Observable} from './observable'
+export {Atom, ObservableAtom, VirtualAtom} from './atom'
+export {Eventable} from './eventable'
+export {pathget, pathset, identity, noop, clonedeep, merge, debounce, exists} from './helpers'
+
 import {Controller} from './controller'
+import {Atom} from './atom'
 import {o, Observable} from './observable'
-import {Atom, ObservableAtom, VirtualAtom} from './atom'
-import {Eventable} from './eventable'
-import {pathget, pathset, identity, noop, clonedeep, merge, debounce, exists} from './helpers'
 
 var _re_elt_name = /^[^\.#]*/
 var _re_cls_or_id = /[\.#][^\.#]+/g
@@ -13,7 +17,7 @@ var _add_cls = (attrs, added) => {
   attrs.class = attrs.class ? o(attrs.class, added, (o1, o2) => `${o1} ${o2}`) : added
 }
 
-function c(elt, attrs) {
+export function c(elt, attrs) {
   var atom = null
 
   var special_attrs = ['id', 'tabindex']
@@ -96,23 +100,23 @@ function c(elt, attrs) {
   return atom
 }
 
-function Fragment(attrs, children) {
+export function Fragment(attrs, children) {
   return children
 }
 
-module.exports = {
-  // core
-  c, Fragment,
-  // observable
-  o, Observable,
-  // atom
-  Atom, ObservableAtom, VirtualAtom,
-  // controller
-  Controller,
-  // decorators
-  bind, click, cls, transition, ctrl,
-  // helpers
-  pathget, pathset, identity, noop, clonedeep, merge, debounce, exists,
-  // eventable
-  Eventable
-}
+// module.exports = {
+//   // core
+//   c, Fragment,
+//   // observable
+//   // o, Observable,
+//   // atom
+//   Atom, ObservableAtom, VirtualAtom,
+//   // controller
+//   Controller,
+//   // decorators
+//   bind, click, cls, transition, ctrl,
+//   // helpers
+//   pathget, pathset, identity, noop, clonedeep, merge, debounce, exists,
+//   // eventable
+//   Eventable
+// }
