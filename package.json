@@ -4,5 +4,8 @@
   "repository": "https://github.com/ceymard/carbyne",
   "description": "some description",
   "license": "MIT",
-  "main": "./carbyne.jsx"
+  "main": "./carbyne.jsx",
+  "devDependencies": {
+    "babel-preset-es2015-loose": "^7.0.0"
+  }
 }
