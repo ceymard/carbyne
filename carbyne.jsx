@@ -4,7 +4,7 @@ export {Controller} from './controller'
 export {o, Observable} from './observable'
 export {Atom, ObservableAtom, VirtualAtom} from './atom'
 export {Eventable} from './eventable'
-export {pathget, pathset, identity, noop, clonedeep, merge, debounce, exists} from './helpers'
+export {pathget, pathset, identity, noop, clonedeep, merge, debounce} from './helpers'
 export {RepeaterAtom, Repeat} from './repeat'
 
 import {Controller} from './controller'

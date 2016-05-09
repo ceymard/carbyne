@@ -1,8 +1,4 @@
 
-export function exists(obj) {
-  return obj !== null && obj !== undefined
-}
-
 /**
  * Get a deep property using a string accessor.
  * Eg: `obj = {a: {b: 2}}; pathget(obj, 'a.b') => 2`
@@ -12,7 +8,7 @@ export function exists(obj) {
  * @return {Any}  The value of the property.
  */
 export function pathget(obj, path) {
-  if (!exists(path)) return obj
+  if (!path) return obj
   path = path.toString().split('.')
   for (var i = 0; i < path.length; i++) {
     if (!obj) break
@@ -32,7 +28,7 @@ export function pathget(obj, path) {
  * @param  {Any} value The value the property will be set to.
  */
 export function pathset(obj, path, value) {
-  path = (!exists(path) ? '' : path).toString().split('.')
+  path = (path == null ? '' : path).toString().split('.')
   let last = path.pop()
   for (var i = 0; i < path.length; i++) {
     // create objects as we need it.

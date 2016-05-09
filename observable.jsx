@@ -1,4 +1,4 @@
-const {pathget, pathset, identity, pathjoin, exists} = require('./helpers')
+const {pathget, pathset, identity, pathjoin} = require('./helpers')
 
 
 const IS_CHILD = 1
@@ -95,7 +95,7 @@ export class Observable {
   }
 
   prop(prop) {
-    if (!exists(prop)) return this
+    if (prop == null) return this
     return new PropObservable(this, prop)
   }
 

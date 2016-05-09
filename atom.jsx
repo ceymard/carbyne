@@ -1,5 +1,5 @@
 
-import {identity, forceString, exists} from './helpers'
+import {identity, forceString} from './helpers'
 import {Observable, o} from './observable'
 import {Eventable} from './eventable'
 
@@ -167,7 +167,7 @@ export class BaseAtom extends Eventable {
   append(child) {
     if (typeof child === 'function') child = child()
 
-    if (!exists(child)) return null
+    if (child == null) return null
 
     if (child instanceof Array) {
       child.forEach(c => this.append(c))
