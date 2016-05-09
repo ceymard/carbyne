@@ -273,15 +273,15 @@ export class Observable {
   // FIXME should we do reduce ?
 
   // Some basic modification functions
-  inc(inc) {
+  add(inc) {
     this.set(this._value + inc)
   }
 
-  dec(dec) {
+  sub(dec) {
     this.set(this._value - dec)
   }
 
-  mult(coef) {
+  mul(coef) {
     this.set(this._value * coef)
   }
 
