@@ -238,7 +238,13 @@ export class BaseAtom extends Eventable {
   destroy() {
     return this.unmount()
     .then(res => Promise.all(this.broadcast('destroy:before'))).then(all => {
+      var i = 0, ctrls = this._controllers
+
       this.broadcast('destroy')
+
+      for (i = 0; i < ctrls.length; i++)
+        ctrls[i].atom = null
+
       this.children = null
       this.attrs = null
       this._destroyed = true

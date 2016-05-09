@@ -8,11 +8,6 @@ export class Controller extends Eventable {
     this.atom = null
   }
 
-  onDestroy() {
-    // remove reference to the node for easy GC collection.
-    this.atom = null
-  }
-
   listen() {
     return this.atom.listen(...arguments)
   }
