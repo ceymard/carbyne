@@ -19,19 +19,6 @@ function _get_ancestry(p1, p2) {
   return IS_UNRELATED
 }
 
-// made to be used by Observable transformers so that they
-// give booleans or use transformer functions when true
-function _bool_or_tf(prop, cond, tf) {
-  if (typeof prop !== 'string') {
-    tf = prop
-    prop = null
-  }
-
-  return this.transform(prop, val => {
-    if (tf) return cond(val) ? tf(val) : null
-    return cond(val)
-  })
-}
 
 /**
  *
@@ -101,7 +88,7 @@ export class Observable {
 
   transform(prop, transformer) {
 
-    if (arguments.length === 1) {
+    if (arguments.length <= 1) {
       transformer = prop
       prop = null
     }
@@ -110,114 +97,66 @@ export class Observable {
       transformer = {get: transformer, set: null}
     }
 
-    const obs = prop ? this.prop(prop) : this
+    var obs = (prop != null) ? this.prop(prop) : this
     return new TransformObservable(obs, transformer)
   }
 
-  gt(prop, value) {
-    if (arguments.length === 1) { value = prop; prop = null }
-    return this.transform(prop, {get: val => val > value})
-  }
-
-  lt(prop, value) {
-    if (arguments.length === 1) { value = prop; prop = null }
-    return this.transform(prop, {get: val => val < value})
-  }
-
-  eq(prop, value) {
-    if (arguments.length === 1) { value = prop; prop = null }
-    return this.transform(prop, {get: val => val === value})
-  }
-
-  gte(prop, value) {
-    if (arguments.length === 1) { value = prop; prop = null }
-    return this.transform(prop, {get: val => val >= value})
-  }
-
-  lte(prop, value) {
-    if (arguments.length === 1) { value = prop; prop = null }
-    return this.transform(prop, {get: val => val <= value})
-  }
-
-  not(prop) {
-    if (arguments.length === 1) { value = prop; prop = null }
-    return this.transform(prop, {get: val => !val})
-  }
-
   /**
-   * True if the observed value is neither null, undefined or empty string.
+   *  Boolean methods
    */
-  exists(prop, tf) {
-    return _bool_or_tf.call(this,
-      prop,
-      val => val !== null && val !== 0 && val !== '' && val !== undefined,
-      tf)
-    // return this.transform(prop, {get: val => val != null})
+
+  gt(value) {
+    return this.tf({get: val => val > value})
   }
 
-  isNotNull(prop, tf) {
-    return _bool_or_tf.call(this, prop, val => val !== null && val !== undefined, tf)
+  lt(value) {
+    return this.tf({get: val => val < value})
   }
 
-  isNull(prop, tf) {
-    return _bool_or_tf.call(this, prop, val => val === null, tf)
+  eq(value) {
+    return this.tf({get: val => val === value})
   }
 
-  isUndefined(prop, tf) {
-    return _bool_or_tf.call(this, prop, val => val === undefined, tf)
+  gte(value) {
+    return this.tf({get: val => val >= value})
   }
 
-  isDefined(prop, tf) {
-    return _bool_or_tf.call(this, prop, val => val !== undefined, tf)
+  lte(value) {
+    return this.tf({get: val => val <= value})
   }
 
-  isFalse(prop, tf) {
-    return _bool_or_tf.call(this, prop, val => val === false)
+  isNull() {
+    return this.tf({get: val => val == null})
   }
 
-  isTrue(prop, tf) {
-    return _bool_or_tf.call(this, prop, val => val === true, tf)
+  isNotNull() {
+    return this.tf({get: val => val != null})
   }
 
-  isEmpty(prop) {
-    return _bool_or_tf.call(this, prop, val => !val)
+  isUndefined() {
+    return this.tf({get: val => val === undefined})
   }
 
-  and(...obs) {
-    return o(this, ...obs, (...args) => {
-      for (let o of args) if (!o) return false
-      return args[args.length - 1]
-    });
+  isDefined() {
+    return this.tf({get: val => val !== undefined})
   }
 
-  equals(prop, value) {
-    return _bool_or_tf.call(this, prop, val => val === value)
+  isFalse() {
+    return this.tf({get: val => val === false})
   }
 
-  or(...obs) {
-    return o(this, ...obs, (...args) => {
-      for (let o of args) if (o) return o
-      return false
-    })
+  isTrue() {
+    return this.tf({get: val => val === true})
   }
 
-  map(prop, fn) {
-    if (fn === undefined) {
-      fn = prop
-      prop = null
-    }
-    return this.transform(prop, {get: arr => Array.isArray(arr) ? arr.map(fn) : []})
+  //////////////////////////////////////
+
+  map(fn) {
+    return this.transform({get: arr => Array.isArray(arr) ? arr.map(fn) : []})
   }
 
-  filter(prop, fn) {
-    // FIXME should we warn the user if something is given that is not an array ?
-    // for instance the value could be an array, null or undefined, but not anything
-    // else (which would then generate a warning in the console ?)
-    if (fn === undefined) {
-      fn = prop
-      prop = null
-    }
-    return this.transform(prop, {get: arr => Array.isArray(arr) ? arr.map(filter) : []})
+  filter(fn) {
+    return this.transform({get: arr => Array.isArray(arr) ? arr.map(filter) : []})
   }
 
   /////////////////////////////////////////////////////////////////////////
@@ -293,6 +232,15 @@ export class Observable {
     this.set(this._value % m)
   }
 
+  // ?
+
+  or(...args) {
+    return o.or(...[this].concat(args))
+  }
+
+  and(...args) {
+    return o.and(...[this].concat(args))
+  }
 }
 
 Observable.prototype.tf = Observable.prototype.transform
@@ -300,6 +248,9 @@ Observable.prototype.p = Observable.prototype.prop
 Observable.prototype.path = Observable.prototype.prop
 
 
+/**
+ * An Observable based on another observable, watching only its subpath.
+ */
 export class PropObservable extends Observable {
 
   constructor(obs, prop) {
@@ -432,6 +383,9 @@ export class TransformObservable extends Observable {
 }
 
 
+/**
+ * An observable based on several observables and a transformation function.
+ */
 export class DependentObservable extends Observable {
 
   constructor(deps, fn) {
@@ -533,16 +487,6 @@ export function o(...args) {
 
   let fn = args[args.length - 1]
   let deps = Array.prototype.slice.call(arguments, 0, arguments.length - 1)
-  let has_obs = false
-
-  let i = 0
-  // See if one of the dependency has observables.
-  for (i = 0; i < deps.length; i++) {
-    if (deps[i] instanceof Observable) {
-      has_obs = true
-      break
-    }
-  }
 
   // If there is no observer, directly return the result of applying the function
   // with its arguments.
@@ -591,4 +535,20 @@ o.observe = function observe(o, fn) {
   fn(o)
   // return a function that does nothing, since nothing is being registered.
   return function() { }
+}
+
+o.or = function or(...args) {
+  return new DependentObservable(args, (...args) => {
+    for (var i = 0; i < args.length; i++)
+      if (args[i]) return true
+    return false
+  })
+}
+
+o.and = function and(...args) {
+  return new DependentObservable(args, (...args) => {
+    for (var i = 0; i < args.length; i++)
+      if (!args[i]) return false
+    return true
+  })
 }

@@ -356,6 +356,7 @@ export class VirtualAtom extends BaseAtom {
   constructor() {
     super()
 
+    this.name = 'virtual'
     this._begin = null
     this._end = null
   }
@@ -366,8 +367,8 @@ export class VirtualAtom extends BaseAtom {
 
     if (!this._begin) {
       this.trigger('create:before')
-      this._begin = document.createComment('! begin')
-      this._end = document.createComment('! end')
+      this._begin = document.createComment(`[ ${this.name}`)
+      this._end = document.createComment(`]`)
       this.trigger('create')
     }
 

@@ -116,3 +116,32 @@ export function c(elt, attrs) {
 export function Fragment(attrs, children) {
   return children
 }
+
+export function If(cond, fn, fnelse) {
+  return o(cond, val => val ? fn(val) : (fnelse ? fnelse(val) : null))
+}
+
+export function Then(fn) { return fn }
+export function Else(fn) { return fn }
+
+export function Match(obj, ...args) {
+  return o(obj, val => {
+    var i = 0
+    var res = null
+    for (i = 0 ; i < args.length; i++) {
+      res = args[i](obj)
+      if (res) return res
+    }
+    return null
+  })
+}
+
+export function Case(test, fn) {
+  if (typeof test === 'function')
+    return function (obj) {
+      if (test(obj)) return fn(obj)
+    }
+  return function (obj) {
+    if (test === obj) return fn(obj)
+  }
+}
