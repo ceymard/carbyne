@@ -65,6 +65,7 @@ export class Eventable {
 
   destroy() {
     this._listeners = null
+    return this
   }
 
 }

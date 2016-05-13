@@ -101,7 +101,7 @@ export function c(elt, attrs) {
   if (decorators) {
     for (i = 0; i < decorators.length; i++) {
       if (decorators[i] instanceof Controller) {
-        decorators[i].setAtom(atom)
+        atom.addController(decorators[i])
       } else {
         decorated = decorators[i](atom)
         atom = decorated instanceof Atom ? decorated : atom

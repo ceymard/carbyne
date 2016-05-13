@@ -116,7 +116,7 @@ export class BaseAtom extends Eventable {
     } else {
       cbk(obs)
     }
-
+    return this
   }
 
   /////////////////////////////////////////////////////////////////
@@ -294,6 +294,8 @@ export class Atom extends BaseAtom {
       this.element.addEventListener(event, cbk)
       this.on('destroy:before', () => this.element.removeEventListener(event, cbk))
     }
+
+    return this
   }
 
   _setAttribute(name, obs) {
