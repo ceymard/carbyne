@@ -2,7 +2,8 @@
     "compilerOptions": {
         "target": "es5",
         "module": "commonjs",
-        "declaration": false,
+        "declaration": true,
+        "sourceMap": true,
         "noImplicitAny": false,
         "noLib": false
     },
@@ -11,7 +12,7 @@
         "!./node_modules/**/*.ts"
     ],
     "files": [
-        "./carbyne.ts",
+        "./src/carbyne.ts",
         "./typings/es6-promise/es6-promise.d.ts"
     ]
 

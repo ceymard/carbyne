@@ -1,9 +1,7 @@
 
 import {Eventable} from './eventable'
 import {Observable, Observer} from './observable'
-// import {Atom} from './atom'
-
-type Atom = any
+import {Atom} from './atom'
 
 export class Controller extends Eventable {
 

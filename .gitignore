@@ -1,3 +1,5 @@
 node_modules
 elt
 *.js
+*.d.ts
+*.map

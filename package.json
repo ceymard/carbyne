@@ -4,5 +4,6 @@
   "repository": "https://github.com/ceymard/carbyne",
   "description": "some description",
   "license": "MIT",
-  "main": "./src/carbyne.js"
+  "main": "./src/carbyne.js",
+  "typescript": { "definition": "carbyne.d.ts" }
 }
