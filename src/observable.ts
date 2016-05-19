@@ -176,6 +176,30 @@ export class Observable<T> {
 
     return And(...[this, ...args])
   }
+
+  // Some basic modification functions
+  add(inc) {
+    (<any>this).set(<any>this._value + inc)
+  }
+
+  sub(dec) {
+    (<any>this).set(<any>this._value - dec)
+  }
+
+  mul(coef) {
+    (<any>this).set(<any>this._value * coef)
+  }
+
+  div(coef) {
+    (<any>this).set(<any>this._value / coef)
+  }
+
+  mod(m) {
+    (<any>this).set(<any>this._value % m)
+  }
+
+
+
 }
 
 export class ArrayObservable<T> extends Observable<Array<T>> {
@@ -243,35 +267,6 @@ export class ArrayObservable<T> extends Observable<Array<T>> {
   }
 
 }
-
-export class NumberObservable extends Observable<number> {
-
-  // Some basic modification functions
-  add(inc) {
-    this.set(this._value + inc)
-  }
-
-  sub(dec) {
-    this.set(this._value - dec)
-  }
-
-  mul(coef) {
-    this.set(this._value * coef)
-  }
-
-  div(coef) {
-    this.set(this._value / coef)
-  }
-
-  mod(m) {
-    this.set(this._value % m)
-  }
-
-}
-
-// Observable.prototype.tf = Observable.prototype.transform
-// Observable.prototype.p = Observable.prototype.prop
-// Observable.prototype.path = Observable.prototype.prop
 
 
 /**
