@@ -30,31 +30,31 @@ export class Observable {
     this._observers = []
   }
 
-  get(prop) {
+  get() {
+    return this._value
+  }
+
+  getp(prop) {
     return pathget(this._value, prop)
   }
 
-  set(prop, value) {
-
-    if (arguments.length === 1) {
-      value = prop
-      prop = null
-    }
+  set(value) {
 
     // if (value instanceof Observable) value = value._value
 
     let changed = false
-
-    if (prop) {
-      changed = pathset(this._value, prop, value)
-    } else {
-      changed = this._value !== value
-      this._value = value
-    }
-
+    changed = this._value !== value
+    this._value = value
     if (changed) {
-      this._change(prop)
+      this._change('')
     }
+
+  }
+
+  setp(prop, value) {
+
+    if (pathset(this._value, prop, value))
+      this._change(prop)
 
   }
 
@@ -86,20 +86,23 @@ export class Observable {
     return new PropObservable(this, prop)
   }
 
-  transform(prop, transformer) {
-
-    if (arguments.length <= 1) {
-      transformer = prop
-      prop = null
-    }
-
-    if (!transformer.get) {
-      transformer = {get: transformer, set: null}
-    }
-
-    var obs = (prop != null) ? this.prop(prop) : this
-    return new TransformObservable(obs, transformer)
+  p(prop) {
+    return this.prop.apply(this, arguments)
   }
+
+  tf(transformer) {
+    return new TransformObservable(this, transformer)
+  }
+
+  tfp(prop, transformer) {
+
+    let obs = this.prop(prop)
+    return new TransformObservable(obs, transformer)
+
+  }
+
+  transform() { return this.tf.apply(this, arguments) }
+  transformp() { return this.tfp.apply(this, arguments) }
 
   /**
    *  Boolean methods
@@ -243,9 +246,9 @@ export class Observable {
   }
 }
 
-Observable.prototype.tf = Observable.prototype.transform
-Observable.prototype.p = Observable.prototype.prop
-Observable.prototype.path = Observable.prototype.prop
+// Observable.prototype.tf = Observable.prototype.transform
+// Observable.prototype.p = Observable.prototype.prop
+// Observable.prototype.path = Observable.prototype.prop
 
 
 /**
@@ -259,17 +262,29 @@ export class PropObservable extends Observable {
     this._obs = obs
   }
 
-  get(prop) {
+  get() {
+    if (!this._unregister) this._refresh()
+    return this._value
+  }
+
+  getp(prop) {
     if (!this._unregister) {
       this._refresh()
-      // this._value = this._obs.get(this._prop)
     }
     return pathget(this._value, prop)
   }
 
+  set(value) {
+    this._obs.set(this._prop, value)
+  }
+
+  setp(prop, value) {
+    this._obs.set(pathjoin(this._prop, prop), value)
+  }
+
   _refresh(ancestry, prop) {
     const old_val = this._value
-    const new_val = this._value = this._obs.get(this._prop)
+    const new_val = this._value = this._obs.getp(this._prop)
 
     // if changed_prop is a sub property of this prop, then we will change
     // automaticaly.
@@ -285,16 +300,6 @@ export class PropObservable extends Observable {
       for (i = 0; i < obs.length; i++)
         obs[i](new_val, subprop)
     }
-  }
-
-  set(prop, value) {
-    // Forward the set to the parent observable.
-    if (arguments.length === 1) {
-      value = prop
-      prop = null
-    }
-
-    this._obs.set(pathjoin(this._prop, prop), value)
   }
 
   addObserver() {
@@ -325,7 +330,7 @@ export class TransformObservable extends Observable {
     this._unregister = null
   }
 
-  get(prop) {
+  get() {
 
     if (!this._unregister) {
       // Nobody is watching this observable, so it is not up to date.
@@ -352,17 +357,14 @@ export class TransformObservable extends Observable {
    * The transform observable does not set itself directly. Instead, it
    * forwards the set to its observed.
    */
-  set(prop, value) {
-
-    if (arguments.length > 1) {
-      throw new Error('transformers cannot set subpath')
-    }
-
-    value = prop
-    prop = null
+  set(value) {
 
     this._obs.set(this._transformer.set(value))
 
+  }
+
+  setp(prop, value) {
+    throw new Error('transformers cannot set subpath')
   }
 
   addObserver(fn) {
