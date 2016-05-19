@@ -2,6 +2,7 @@
 import {identity, forceString} from './helpers'
 import {Observable, o} from './observable'
 import {Eventable} from './eventable'
+import {Controller} from './controller'
 
 /**
   Noteworthy events ;
@@ -23,16 +24,19 @@ import {Eventable} from './eventable'
   destroy: Right after that.
  */
 
+export type Element = BaseAtom | Node
 
-function _getAtom(child, parent = null) {
 
-  var result = child
+function _getAtom(child: any, parent: BaseAtom = null) : Element {
+
+  var result: Element = child
 
   if (child instanceof Observable) {
     result = new ObservableAtom(child)
   } else if (typeof child === 'string' ||
     typeof child === 'number') {
-    result = document.createTextNode(child)
+
+    result = document.createTextNode(child.toString())
   } else {
 
   }
@@ -59,11 +63,20 @@ function _unmount(child) {
   return Promise.resolve(true)
 }
 
-
 /**
  *
  */
 export class BaseAtom extends Eventable {
+
+  protected _mounted: boolean
+  protected _destroyed: boolean
+  protected _controllers: Array<Controller>
+
+  public parent: BaseAtom
+  public children: Array<Element>
+  public attrs: Object
+
+  protected _fragment: Node
 
   constructor() {
     super()
@@ -96,10 +109,13 @@ export class BaseAtom extends Eventable {
     const res = this.trigger(event, ...args)
     if (!event.propagating) return
 
-    var children = this.children
-    for (var i = 0; i < children.length; i++) {
-      if (children[i] instanceof Atom) children[i].broadcast(event, ...args)
-    }
+    this.atomChildren().forEach(child => child.broadcast(event, ...args))
+    // var children = this.children
+    // for (var i = 0; i < children.length; i++) {
+    //   if (children[i] instanceof BaseAtom) {
+    //     (<BaseAtom>children[i]).broadcast(event, ...args)
+    //   }
+    // }
     return res
   }
 
@@ -133,7 +149,7 @@ export class BaseAtom extends Eventable {
   getController(cls, recursive = true) {
 
     let res = null
-    let atom = this
+    let atom: BaseAtom = this
 
     while (atom) {
       for (let ctrl of atom._controllers) {
@@ -159,7 +175,7 @@ export class BaseAtom extends Eventable {
     cn.setAtom(this)
   }
 
-  mount() {
+  mount(parent: Node, before: Node = null) {
     // This method is virtual and must be implemented.
     throw new Error('BaseAtom can not be mounted.')
   }
@@ -198,7 +214,7 @@ export class BaseAtom extends Eventable {
     return child
   }
 
-  _addFragment(child) {
+  _addFragment() {
     throw new Error('BaseAtom#_addFragment() can not be called directly')
   }
 
@@ -210,7 +226,7 @@ export class BaseAtom extends Eventable {
     throw new Error('BaseAtom#_destroy() can not be called directly')
   }
 
-  unmount() {
+  unmount() : Promise<any> {
     // Ignore unmounted nodes, as unmount could be called by destroy() while not
     // mounted.
     if (!this._mounted) return Promise.resolve(false)
@@ -223,6 +239,10 @@ export class BaseAtom extends Eventable {
     .then(e => {
       this.trigger('unmount')
     })
+  }
+
+  atomChildren() : Array<BaseAtom> {
+    return <Array<BaseAtom>>this.children.filter(child => child instanceof BaseAtom)
   }
 
   removeChild(child) {
@@ -248,18 +268,22 @@ export class BaseAtom extends Eventable {
       this.children = null
       this.attrs = null
       this._destroyed = true
-      super.destroy()
+      this._listeners = {}
+      // super.destroy()
     })
   }
 
   /**
    * Detaches all children or removes them.
    */
-  empty() {
+  empty() : Promise<any> {
     if (!this._mounted) return Promise.resolve(true)
 
-    var prom = this.children.slice(0).map(c => c instanceof BaseAtom ? c.destroy() : c.parentNode.removeChild(c))
-    return Promise.all(prom).then(all => {
+    var prom = this.children.slice(0).map(c => c instanceof BaseAtom ?
+      c.destroy()
+      : Promise.resolve(c.parentNode.removeChild(c))
+    )
+    return Promise.all<any>(prom).then(all => {
       this.children = []
     })
   }
@@ -271,6 +295,10 @@ export class BaseAtom extends Eventable {
  *
  */
 export class Atom extends BaseAtom {
+
+  public tag: string
+  public attrs: Object
+  public element: HTMLElement
 
   constructor(tag, attrs = {}, children = []) {
     super()
@@ -355,6 +383,10 @@ export class Atom extends BaseAtom {
  */
 export class VirtualAtom extends BaseAtom {
 
+  public name: string
+  protected _begin: Comment
+  protected _end: Comment
+
   constructor() {
     super()
 
@@ -410,17 +442,22 @@ export class VirtualAtom extends BaseAtom {
  * It uses an Atom without a tag, which means it will be using
  * comment nodes to insert its contents.
  */
-export class ObservableAtom extends VirtualAtom {
+export class ObservableAtom<T> extends VirtualAtom {
+
+  public obs: Observable<T>
+
+  private next_value: T
+  private last_was_text: boolean
 
   constructor(obs) {
-    super(null)
+    super()
     this.obs = obs
     this.last_was_text = false
     this.next_value = null
   }
 
-  mount() {
-    super.mount(...arguments)
+  mount(parent: Node, before: Node = null) {
+    super.mount(parent, before)
 
     this.observe(this.obs, value => {
       if (value === undefined) return;

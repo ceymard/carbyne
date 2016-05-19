@@ -1,7 +1,11 @@
 
 import {Controller} from '../controller'
+import {Observable} from '../observable'
 
 export class BindController extends Controller {
+
+  obs: Observable<string>
+  opts: Object // FIXME this is still unused
 
   constructor(obs, opts) {
     super()

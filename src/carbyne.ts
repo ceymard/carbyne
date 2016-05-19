@@ -1,5 +1,5 @@
 
-export {bind, click, cls, transition, ctrl} from './decorators'
+export {bind, click, cls, ctrl} from './decorators'
 export {Controller} from './controller'
 export {o, Observable} from './observable'
 export {Atom, ObservableAtom, VirtualAtom} from './atom'

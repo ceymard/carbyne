@@ -1,6 +1,6 @@
 
-import {VirtualAtom} from './atom'
-
+import {VirtualAtom, BaseAtom} from './atom'
+import {Observable} from './observable'
 
 /**
  * Use the repeater when you want to render an Array and not have its elements
@@ -11,7 +11,11 @@ import {VirtualAtom} from './atom'
  * an observable as its argument. If the length of the observed array changes,
  * elements are removed or added accordingly.
  */
-export class RepeaterAtom extends VirtualAtom {
+export class RepeaterAtom<T> extends VirtualAtom {
+
+	_current_length: number
+	_obs: Observable<Array<T>>
+	_fn: (o: Observable<T>, idx: number) => BaseAtom
 
 	constructor(obs, fn) {
 		super() // Virtual Atom
@@ -20,8 +24,8 @@ export class RepeaterAtom extends VirtualAtom {
 		this._fn = fn
 	}
 
-	mount() {
-		super.mount(...arguments) // mount it normally
+	mount(parent: Node, before: Node = null) {
+		super.mount(parent, before) // mount it normally
 
 		// and then create the observing logic
 		this.observe(this._obs, arr => {
@@ -43,13 +47,13 @@ export class RepeaterAtom extends VirtualAtom {
 		if (arr.length < this._current_length) {
 			// remove the elements we don't need anymore
 
-			this.children
+			this.atomChildren()
 				.slice(arr.length)
 				.map(atom => atom.destroy())
 
 		} else if (arr.length > this._current_length) {
 			for (var i = this._current_length; i < arr.length; i++) {
-				this.append(fn(this._obs.prop(`${i}`), i))
+				this.append(fn(this._obs.prop<T>(i.toString()), i))
 			}
 		}
 

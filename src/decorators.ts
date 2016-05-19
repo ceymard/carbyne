@@ -1,6 +1,6 @@
 
-const {BindController} = require('./controllers/bind')
-const {Observable} = require('./observable')
+import {BindController} from './controllers/bind'
+import {Observable} from './observable'
 
 export function bind(obs, opts) {
 

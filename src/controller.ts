@@ -1,5 +1,6 @@
 
 import {Eventable} from './eventable'
+import {Observable, Observer} from './observable'
 // import {Atom} from './atom'
 
 type Atom = any
@@ -13,11 +14,11 @@ export class Controller extends Eventable {
     this.atom = null
   }
 
-  listen(ev: string, fn: Observer) {
+  listen(ev: string, fn: any) {
     return this.atom.listen(ev, fn)
   }
 
-  observe(o: Observable, fn: Observer) {
+  observe<T>(o: Observable<T>, fn: Observer<T>) {
     return this.atom.observe(o, fn)
   }
 

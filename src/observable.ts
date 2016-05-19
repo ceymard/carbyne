@@ -21,9 +21,9 @@ function _get_ancestry(p1, p2) {
 }
 
 
-type Observer<T> = (obj : T, prop? : string) => void
+export type Observer<T> = (obj : T, prop? : string) => void
 
-type Transformer<T, U> = {
+export type Transformer<T, U> = {
   get: (a: T) => U
   set?: (a: U) => T
 }

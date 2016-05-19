@@ -8,7 +8,7 @@ type Event = {
 
 export class Eventable {
 
-  _listeners : Object
+  protected _listeners : Object
 
 	constructor() {
     this._listeners = {}
@@ -63,11 +63,6 @@ export class Eventable {
     }
 
     return result
-  }
-
-  destroy() {
-    this._listeners = null
-    return this
   }
 
 }
