@@ -5,5 +5,6 @@
   "description": "some description",
   "license": "MIT",
   "main": "./src/carbyne.js",
-  "typescript": { "definition": "carbyne.d.ts" }
+  "typescript": { "definition": "carbyne.d.ts" },
+  "typings": "./src/carbyne.d.ts"
 }

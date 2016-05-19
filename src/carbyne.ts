@@ -1,15 +1,15 @@
 
 export {bind, click, cls, ctrl} from './decorators'
 export {Controller} from './controller'
-export {o, Observable} from './observable'
+export {o, Observable, O} from './observable'
 export {Atom, ObservableAtom, VirtualAtom} from './atom'
 export {Eventable} from './eventable'
 export {pathget, pathset, identity, noop, clonedeep, merge, debounce} from './helpers'
 export {RepeaterAtom, Repeat} from './repeat'
 
 import {Controller} from './controller'
-import {Atom} from './atom'
-import {o, Observable} from './observable'
+import {BaseAtom, Atom} from './atom'
+import {o, Observable, O} from './observable'
 
 var _re_elt_name = /^[^\.#]*/
 var _re_cls_or_id = /[\.#][^\.#]+/g
@@ -17,6 +17,16 @@ var _re_cls_or_id = /[\.#][^\.#]+/g
 var _add_cls = (attrs, added) => {
   attrs.class = attrs.class ? o(attrs.class, added, (o1, o2) => `${o1} ${o2}`) : added
 }
+
+export interface BasicAttributes {
+  id?: O<string>
+  class?: O<string>
+  width?: O<string>
+  height?: O<string>
+}
+
+export type FnBuilder = (a: BasicAttributes, children: Array<any>) => BaseAtom
+export type Builder = string | FnBuilder
 
 
 /**
@@ -30,7 +40,7 @@ var _add_cls = (attrs, added) => {
  * @param  {Object} attrs The attributes that should go onto the final Atom.
  * @return {Atom} The instanciated Atom.
  */
-export function c(elt, attrs) {
+export function c(elt: Builder, attrs: any = {}, children: Array<any> = []) {
   var atom = null
 
   var special_attrs = ['id', 'tabindex']
@@ -50,18 +60,20 @@ export function c(elt, attrs) {
 
   if (typeof elt === 'string') {
 
+    let str_elt = <string>elt
     // Add to class the .<class name> part or set the id if the provided
     // string had a #<id> in it.
-    elt.replace(_re_cls_or_id, match => {
+    str_elt.replace(_re_cls_or_id, match => {
       if (match[0] === '.') {
         _add_cls(attrs, match.slice(1))
       } else attrs.id = match.slice(1)
+      return ''
     })
 
-    elt = _re_elt_name.exec(elt)[0] || 'div'
+    str_elt = _re_elt_name.exec(str_elt)[0] || 'div'
 
     // If we have a string, then it is a simple html element.
-    atom = new Atom(elt, attrs, children)
+    atom = new Atom(str_elt, attrs, children)
 
   } else if (typeof elt === 'function') {
     // If it is a function, then the element is composite.

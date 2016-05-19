@@ -20,6 +20,7 @@ function _get_ancestry(p1, p2) {
   return IS_UNRELATED
 }
 
+export type O<T> = T | Observable<T>
 
 export type Observer<T> = (obj : T, prop? : string) => void
 
