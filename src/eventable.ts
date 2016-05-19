@@ -1,8 +1,14 @@
 
 var ident = 0
 
+type Event = {
+  type: string
+  target: Eventable
+}
 
 export class Eventable {
+
+  _listeners : Object
 
 	constructor() {
     this._listeners = {}
@@ -10,21 +16,17 @@ export class Eventable {
 
   /////////////////////////////////////////////////////////////////
 
-  _mkEvent(event) {
+  _mkEvent(event : string | Event) : Event {
     if (typeof event === 'string')
       return {
         type: event,
-        target: this,
-        prevent_default: false,
-        preventDefault() { this.prevent_default = true },
-        propagating: true,
-        stopPropagation() { this.propagating = false },
-    }
+        target: this
+      }
     let e = {}
-    var x = null
-    for (x in event)
+    let x = null
+    for (x in <Event>event)
       e[x] = event[x]
-    return e
+    return <Event>e
   }
 
   on(name, fn) {

@@ -1,4 +1,5 @@
-const {pathget, pathset, identity, pathjoin} = require('./helpers')
+
+import {pathget, pathset, identity, pathjoin} from './helpers'
 
 
 const IS_CHILD = 1
@@ -20,25 +21,38 @@ function _get_ancestry(p1, p2) {
 }
 
 
+type Observer<T> = (obj : T, prop : string) => void
+
+type TransformerObj<T, U> = {
+  get: (a: T) => U
+  set?: (a: U) => T
+}
+
+type TransformerFn<T, U> = (a: T) => U
+type Transformer<T, U> = TransformerObj<T, U> | TransformerFn<T, U>
+
 /**
  *
  */
-export class Observable {
+export class Observable<T> {
 
-  constructor(value) {
+  public _value : T
+  public _observers : Array<Observer<T>>
+
+  constructor(value : T) {
     this._value = value
     this._observers = []
   }
 
-  get() {
+  get() : T {
     return this._value
   }
 
-  getp(prop) {
-    return pathget(this._value, prop)
+  getp<U>(prop) : U {
+    return pathget<U>(this._value, prop)
   }
 
-  set(value) {
+  set(value : T) {
 
     // if (value instanceof Observable) value = value._value
 
@@ -51,19 +65,19 @@ export class Observable {
 
   }
 
-  setp(prop, value) {
+  setp<U>(prop : string, value : U) {
 
     if (pathset(this._value, prop, value))
       this._change(prop)
 
   }
 
-  _change(prop) {
+  _change(prop : string | number) {
     const val = this._value
     const obss = this._observers
-    prop = (prop||'').toString()
+    const final_prop = (prop||'').toString()
     for (var i = 0; i < obss.length; i++)
-      obss[i](val, prop)
+      obss[i](val, final_prop)
   }
 
   addObserver(fn) {
@@ -81,20 +95,19 @@ export class Observable {
     return false
   }
 
-  prop(prop) {
-    if (prop == null) return this
-    return new PropObservable(this, prop)
+  prop<U>(prop : string) : PropObservable<T, U> {
+    return new PropObservable<T, U>(this, prop)
   }
 
   p(prop) {
     return this.prop.apply(this, arguments)
   }
 
-  tf(transformer) {
+  tf<U>(transformer : Transformer<T, U>) {
     return new TransformObservable(this, transformer)
   }
 
-  tfp(prop, transformer) {
+  tfp(prop : string, transformer : Transformer<T, any>) {
 
     let obs = this.prop(prop)
     return new TransformObservable(obs, transformer)
@@ -145,28 +158,34 @@ export class Observable {
   }
 
   isFalse() {
-    return this.tf({get: val => val === false})
+    return this.tf({get: val => <any>val === false})
   }
 
   isTrue() {
-    return this.tf({get: val => val === true})
+    return this.tf({get: val => <any>val === true})
   }
 
-  //////////////////////////////////////
+  // FIXME should we do reduce ?
 
-  map(fn) {
-    return this.transform({get: arr => Array.isArray(arr) ? arr.map(fn) : []})
+  // ?
+
+  or(...args : Array<Observable<any>>) : Observable<boolean> {
+    return Or(...[this, ...args])
   }
 
-  filter(fn) {
-    return this.transform({get: arr => Array.isArray(arr) ? arr.map(filter) : []})
+  and(...args: Array<Observable<boolean>>) : Observable<boolean> {
+
+    return And(...[this, ...args])
   }
+}
+
+export class ArrayObservable<T> extends Observable<Array<T>> {
 
   /////////////////////////////////////////////////////////////////////////
   // Some array functions
 
-  push() {
-    let res = this._value.push(...arguments)
+  push(v: T) {
+    let res = this._value.push(v)
     this._change(this._value.length - 1)
     this._change('length')
     return res
@@ -180,39 +199,53 @@ export class Observable {
   }
 
   shift() {
-    let res = this._value.shift(...arguments)
+    let res = this._value.shift()
     this._change(null)
     this._change('length')
     return res
   }
 
-  unshift() {
-    let res = this._value.unshift(...arguments)
+  unshift(v: T) {
+    let res = this._value.unshift(v)
     this._change(null)
     this._change('length')
     return res
   }
 
   sort() {
-    let res = this._value.sort(...arguments)
+    // FIXME sort function type
+    let res = this._value.sort()
     this._change(null)
     return res
   }
 
-  splice() {
-    let res = this._value.splice(...arguments)
+  splice(start: number, deleteCount: number, ...items: Array<T>) {
+    // FIXME arguments
+    let res = this._value.splice(start, deleteCount, ...items)
     this._change(null)
     this._change('length')
     return res
   }
 
   reverse() {
-    let res = this._value.reverse(...arguments)
+    let res = this._value.reverse()
     this._change(null)
     return res
   }
 
-  // FIXME should we do reduce ?
+  //////////////////////////////////////
+
+  map(fn) {
+    return this.tf({ get: arr => Array.isArray(arr) ? arr.map(fn) : [] })
+  }
+
+  filter(fn) {
+    return this.tf({ get: arr => Array.isArray(arr) ? arr.filter(fn) : [] })
+  }
+
+}
+
+export class NumberObservable extends Observable<number> {
 
   // Some basic modification functions
   add(inc) {
@@ -235,15 +268,6 @@ export class Observable {
     this.set(this._value % m)
   }
 
-  // ?
-
-  or(...args) {
-    return o.or(...[this].concat(args))
-  }
-
-  and(...args) {
-    return o.and(...[this].concat(args))
-  }
 }
 
 // Observable.prototype.tf = Observable.prototype.transform
@@ -254,12 +278,17 @@ export class Observable {
 /**
  * An Observable based on another observable, watching only its subpath.
  */
-export class PropObservable extends Observable {
+export class PropObservable<T, U> extends Observable<T> {
 
-  constructor(obs, prop) {
+  _prop : string
+  _obs : Observable<T>
+  _unregister: () => void
+
+  constructor(obs : Observable<T>, prop : string) {
     super(undefined)
     this._prop = "" + prop // force prop as a string
     this._obs = obs
+    this._unregister = null
   }
 
   get() {
@@ -282,7 +311,7 @@ export class PropObservable extends Observable {
     this._obs.setp(pathjoin(this._prop, prop), value)
   }
 
-  _refresh(ancestry, prop) {
+  _refresh(ancestry?, prop?) {
     const old_val = this._value
     const new_val = this._value = this._obs.getp(this._prop)
 
@@ -462,8 +491,6 @@ export class DependentObservable extends Observable {
 }
 
 
-
-
 /**
  * This is a convenience function.
  * There are two ways of calling it :
@@ -477,7 +504,7 @@ export class DependentObservable extends Observable {
  * 		just return the result of the computation. Otherwise return an observable
  * 		that depends on other observables.
  */
-export function o(...args) {
+export function o(...args : Array<any>) {
   let l = args.length
 
   // Just creating an observable.
@@ -502,26 +529,11 @@ export function o(...args) {
   return res
 }
 
-
-/**
- * Force the array or object to only contain Obervables.
- */
-o.all = function all(arg) {
-  if (Array.isArray(arg))
-    return arg.map((e) => o(e))
-  else {
-    let res = {}
-    for (let name in arg)
-      res[name] = o(arg[name])
-    return res
-  }
-}
-
 /**
  * Get the current value of the observable, or the value itself if the
  * provided parameter was not an observable.
  */
-o.get = function get(v) {
+export function get(v) {
   if (v instanceof Observable) return v.get()
   return v
 }
@@ -531,7 +543,7 @@ o.get = function get(v) {
  * Setup an onchange event on the observable, or just call the
  * onchange value once if the provided o is not an observable.
  */
-o.observe = function observe(o, fn) {
+export function observe(o, fn) {
   if (o instanceof Observable) return o.addObserver(fn)
   // the object is not observable, so the onchange value is immediately called.
   fn(o)
@@ -539,7 +551,7 @@ o.observe = function observe(o, fn) {
   return function() { }
 }
 
-o.or = function or(...args) {
+export function Or(...args : Observable<any>) : Observable<boolean> {
   return new DependentObservable(args, (...args) => {
     for (var i = 0; i < args.length; i++)
       if (args[i]) return true
@@ -547,7 +559,7 @@ o.or = function or(...args) {
   })
 }
 
-o.and = function and(...args) {
+export function And(...args: Observable<any>) : Observable<boolean> {
   return new DependentObservable(args, (...args) => {
     for (var i = 0; i < args.length; i++)
       if (!args[i]) return false

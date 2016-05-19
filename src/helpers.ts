@@ -7,12 +7,12 @@
  * @param  {String} path The path inside the object
  * @return {Any}  The value of the property.
  */
-export function pathget(obj, path) {
+export function pathget<T>(obj : any, path : string|number) : T {
   if (!path) return obj
-  path = path.toString().split('.')
-  for (var i = 0; i < path.length; i++) {
+  let pathes = path.toString().split('.')
+  for (var i = 0; i < pathes.length; i++) {
     if (!obj) break
-    obj = obj[path[i]]
+    obj = obj[pathes[i]]
   }
   return obj
 }
@@ -27,13 +27,13 @@ export function pathget(obj, path) {
  *                        to go into sub-objects.
  * @param  {Any} value The value the property will be set to.
  */
-export function pathset(obj, path, value) {
-  path = (path == null ? '' : path).toString().split('.')
-  let last = path.pop()
-  for (var i = 0; i < path.length; i++) {
+export function pathset(obj : any, path : string|number, value : any) : boolean {
+  let pathes = (path == null ? '' : path).toString().split('.')
+  let last = pathes.pop()
+  for (var i = 0; i < pathes.length; i++) {
     // create objects as we need it.
-    if (!obj[path[i]]) obj[path[i]] = {}
-    obj = obj[path[i]]
+    if (!obj[pathes[i]]) obj[pathes[i]] = {}
+    obj = obj[pathes[i]]
   }
   const changed = obj[last] !== value
   obj[last] = value
@@ -55,14 +55,19 @@ export function noop() { }
 export function identity(i) { return i }
 
 
-export function forceString(val) {
+export function forceString(val : any) {
   if (val === undefined || val === null) val = ''
   else if (typeof val === 'object') val = JSON.stringify(val)
   return val.toString()
 }
 
 
-export function pathjoin(...args) {
+/**
+ * Transforms a series of string paths and join them with a dot
+ * @param  {[string]} ...args [description]
+ * @return {string}           [description]
+ */
+export function pathjoin(...args : Array<string>) : string {
   const pathes = []
   for (let pth of args) {
     if (pth) pathes.push(pth)
@@ -71,7 +76,10 @@ export function pathjoin(...args) {
 }
 
 
-export function clonedeep(obj) {
+/**
+ * @param {[type]} obj [description]
+ */
+export function clonedeep(obj : any) : any {
   if (obj instanceof Array)
     return obj.map(elt => clonedeep(elt))
   if ('object' === typeof obj) {
@@ -84,14 +92,14 @@ export function clonedeep(obj) {
 }
 
 
-export function merge(dst, src) {
+export function merge(dst : Object, src : Object) : Object {
   for (var x in src) {
     dst[x] = src[x]
   }
   return dst
 }
 
-export function debounce(fn, ms) {
+export function debounce(fn : Function, ms : number) : Function {
   let last_call = new Date
   let cancel_id = null
   let self = this
