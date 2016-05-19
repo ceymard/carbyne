@@ -21,15 +21,15 @@ function _get_ancestry(p1, p2) {
 }
 
 
-type Observer<T> = (obj : T, prop : string) => void
+type Observer<T> = (obj : T, prop? : string) => void
 
-type TransformerObj<T, U> = {
+type Transformer<T, U> = {
   get: (a: T) => U
   set?: (a: U) => T
 }
 
-type TransformerFn<T, U> = (a: T) => U
-type Transformer<T, U> = TransformerObj<T, U> | TransformerFn<T, U>
+// type TransformerFn<T, U> = (a: T) => U
+// type TransformerFlexible<T, U> = TransformerObj<T, U> | TransformerFn<T, U>
 
 /**
  *
@@ -80,19 +80,17 @@ export class Observable<T> {
       obss[i](val, final_prop)
   }
 
-  addObserver(fn) {
+  addObserver(fn : Observer<T>) {
     this._observers.push(fn)
     fn(this._value)
     return this.removeObserver.bind(this, fn)
   }
 
-  removeObserver(fn) {
+  removeObserver(fn : Observer<T>) {
     const index = this._observers.indexOf(fn)
     if (index > -1) {
       this._observers.splice(index, 1)
-      return true
     }
-    return false
   }
 
   prop<U>(prop : string) : PropObservable<T, U> {
@@ -278,7 +276,7 @@ export class NumberObservable extends Observable<number> {
 /**
  * An Observable based on another observable, watching only its subpath.
  */
-export class PropObservable<T, U> extends Observable<T> {
+export class PropObservable<T, U> extends Observable<U> {
 
   _prop : string
   _obs : Observable<T>
@@ -313,7 +311,7 @@ export class PropObservable<T, U> extends Observable<T> {
 
   _refresh(ancestry?, prop?) {
     const old_val = this._value
-    const new_val = this._value = this._obs.getp(this._prop)
+    const new_val = this._value = this._obs.getp<U>(this._prop)
 
     // if changed_prop is a sub property of this prop, then we will change
     // automaticaly.
@@ -331,7 +329,7 @@ export class PropObservable<T, U> extends Observable<T> {
     }
   }
 
-  addObserver() {
+  addObserver(fn: Observer<U>) {
     if (!this._unregister) {
       this._unregister = this._obs.addObserver((value, prop) => {
         // Link observable changes to us.
@@ -344,13 +342,17 @@ export class PropObservable<T, U> extends Observable<T> {
       })
     }
 
-    return super.addObserver(...arguments)
+    return super.addObserver(fn)
   }
 
 }
 
 
-export class TransformObservable extends Observable {
+export class TransformObservable<T, U> extends Observable<U> {
+
+  _transformer: Transformer<T, U>
+  _obs: Observable<T>
+  _unregister: () => void
 
   constructor(obs, transformer) {
     super(undefined) // !!!
@@ -400,11 +402,11 @@ export class TransformObservable extends Observable {
     if (!this._unregister) {
       this._unregister = this._obs.addObserver(value => this._refresh(value))
     }
-    return super.addObserver(...arguments)
+    return super.addObserver(fn)
   }
 
   removeObserver(fn) {
-    super.removeObserver(...arguments)
+    super.removeObserver(fn)
     if (this._observers.length === 0) {
       this._unregister()
       this._unregister = null
@@ -417,7 +419,14 @@ export class TransformObservable extends Observable {
 /**
  * An observable based on several observables and a transformation function.
  */
-export class DependentObservable extends Observable {
+export class DependentObservable<T> extends Observable<T> {
+
+  _resolved: Array<any>
+  _unregister: Array<() => void>
+  _deps: Array<Observable<any>>
+  _fn: (...arg: Array<any>) => T
+
+  _ignore_updates: boolean
 
   constructor(deps, fn) {
     super(undefined)
@@ -430,7 +439,12 @@ export class DependentObservable extends Observable {
     this._ignore_updates = false
   }
 
-  get(prop) {
+  get() {
+    if (this._observers.length === 0) this._refresh()
+    return this._value
+  }
+
+  getp(prop) {
     if (this._observers.length === 0) this._refresh()
     return pathget(this._value, prop)
   }
@@ -439,17 +453,21 @@ export class DependentObservable extends Observable {
     throw new Error('cannot set on a DependentObservable')
   }
 
+  setp() {
+    throw new Error('cannot set on a DependentObservable')
+  }
+
   _refresh() {
     if (this._ignore_updates) return
     const old_val = this._value
-    const resolved = this._resolved || this._deps.map(dep => o.get(dep))
+    const resolved = this._resolved || this._deps.map(dep => Get(dep))
     const new_val = this._value = this._fn(...resolved)
     const obs = this._observers
     var i = 0
 
     if (old_val === new_val) return
 
-    for (i = 0; i < obs.length; i++) obs[i](new_val)
+    for (i = 0; i < obs.length; i++) obs[i](new_val, '')
   }
 
   addObserver(fn) {
@@ -476,11 +494,11 @@ export class DependentObservable extends Observable {
       this._refresh()
     }
 
-    return super.addObserver(...arguments)
+    return super.addObserver(fn)
   }
 
-  removeObserver() {
-    super.removeObserver(...arguments)
+  removeObserver(fn) {
+    super.removeObserver(fn)
     if (this._observers.length === 0) {
       for (let un of this._unregister) un()
       this._unregister = []
@@ -533,7 +551,7 @@ export function o(...args : Array<any>) {
  * Get the current value of the observable, or the value itself if the
  * provided parameter was not an observable.
  */
-export function get(v) {
+export function Get(v : any) : any {
   if (v instanceof Observable) return v.get()
   return v
 }
@@ -551,16 +569,16 @@ export function observe(o, fn) {
   return function() { }
 }
 
-export function Or(...args : Observable<any>) : Observable<boolean> {
-  return new DependentObservable(args, (...args) => {
+export function Or(...args : Array<Observable<any>>) : Observable<boolean> {
+  return new DependentObservable<boolean>(args, (...args) => {
     for (var i = 0; i < args.length; i++)
       if (args[i]) return true
     return false
   })
 }
 
-export function And(...args: Observable<any>) : Observable<boolean> {
-  return new DependentObservable(args, (...args) => {
+export function And(...args: Array<Observable<any>>) : Observable<boolean> {
+  return new DependentObservable<boolean>(args, (...args) => {
     for (var i = 0; i < args.length; i++)
       if (!args[i]) return false
     return true
