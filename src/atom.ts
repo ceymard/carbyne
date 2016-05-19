@@ -226,21 +226,6 @@ export class BaseAtom extends Eventable {
     throw new Error('BaseAtom#_destroy() can not be called directly')
   }
 
-  unmount() : Promise<any> {
-    // Ignore unmounted nodes, as unmount could be called by destroy() while not
-    // mounted.
-    if (!this._mounted) return Promise.resolve(false)
-
-    this._mounted = false
-
-    if (this.parent) this.parent.removeChild(this)
-    return Promise.all(this.broadcast('unmount:before'))
-    .then(e => this._unmountFromDOM())
-    .then(e => {
-      this.trigger('unmount')
-    })
-  }
-
   atomChildren() : Array<BaseAtom> {
     return <Array<BaseAtom>>this.children.filter(child => child instanceof BaseAtom)
   }
@@ -255,9 +240,24 @@ export class BaseAtom extends Eventable {
     }
   }
 
+  unmount(): Promise<any> {
+    // Ignore unmounted nodes, as unmount could be called by destroy() while not
+    // mounted.
+    if (!this._mounted) return Promise.resolve(false)
+
+    this._mounted = false
+
+    if (this.parent) this.parent.removeChild(this)
+    return Promise.all(this.broadcast('unmount:before') || [])
+      .then(e => this._unmountFromDOM())
+      .then(e => {
+        return this.trigger('unmount')
+      })
+  }
+
   destroy() {
     return this.unmount()
-    .then(res => Promise.all(this.broadcast('destroy:before'))).then(all => {
+    .then(res => Promise.all(this.broadcast('destroy:before') || [])).then(all => {
       var i = 0, ctrls = this._controllers
 
       this.broadcast('destroy')
