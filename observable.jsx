@@ -275,11 +275,11 @@ export class PropObservable extends Observable {
   }
 
   set(value) {
-    this._obs.set(this._prop, value)
+    this._obs.setp(this._prop, value)
   }
 
   setp(prop, value) {
-    this._obs.set(pathjoin(this._prop, prop), value)
+    this._obs.setp(pathjoin(this._prop, prop), value)
   }
 
   _refresh(ancestry, prop) {
