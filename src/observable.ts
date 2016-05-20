@@ -24,8 +24,9 @@ export type O<T> = T | Observable<T>
 
 export type Observer<T> = (obj : T, prop? : string) => void
 
+export type TransformFn<T, U> = (a: T) => U
 export type Transformer<T, U> = {
-  get: (a: T) => U
+  get: TransformFn<T, U>
   set?: (a: U) => T
 }
 
@@ -102,13 +103,19 @@ export class Observable<T> {
     return this.prop.apply(this, arguments)
   }
 
-  tf<U>(transformer : Transformer<T, U>) {
+  tf<U>(transformer : Transformer<T, U> | TransformFn<T, U>) {
+    if (typeof transformer === 'function') {
+      return new TransformObservable(this, {get: transformer as TransformFn<T, U>})
+    }
     return new TransformObservable(this, transformer)
   }
 
-  tfp(prop : string, transformer : Transformer<T, any>) {
+  tfp<U>(prop : string, transformer : Transformer<T, U> | TransformFn<T, U>) {
 
-    let obs = this.prop(prop)
+    let obs = this.prop<U>(prop)
+    if (typeof transformer === 'function') {
+      return new TransformObservable(obs, {get: transformer as TransformFn<T, U>})
+    }
     return new TransformObservable(obs, transformer)
 
   }

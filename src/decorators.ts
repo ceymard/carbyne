@@ -2,7 +2,7 @@
 import {BindController} from './controllers/bind'
 import {Observable} from './observable'
 
-export function bind(obs, opts) {
+export function bind(obs, opts: Object = {}) {
 
   if (!obs) return
 

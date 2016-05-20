@@ -2,7 +2,7 @@
 export {bind, click, cls, ctrl} from './decorators'
 export {Controller} from './controller'
 export {o, Observable, O, ArrayObservable} from './observable'
-export {Atom, ObservableAtom, VirtualAtom} from './atom'
+export {Atom, ObservableAtom, VirtualAtom, BaseAtom} from './atom'
 export {Eventable} from './eventable'
 export {pathget, pathset, identity, noop, clonedeep, merge, debounce} from './helpers'
 export {RepeaterAtom, Repeat} from './repeat'
@@ -125,11 +125,13 @@ export function c(elt: Builder, attrs: any = {}, children: Array<any> = []) {
   return atom
 }
 
+c.createElement = c
+
 export function Fragment(attrs, children) {
   return children
 }
 
-export function If(cond, fn, fnelse) {
+export function If(cond, fn, fnelse?) {
   return o(cond, val => val ? fn(val) : (fnelse ? fnelse(val) : null))
 }
 
