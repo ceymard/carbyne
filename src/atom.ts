@@ -75,6 +75,7 @@ export class BaseAtom extends Eventable {
   public parent: BaseAtom
   public children: Array<Element>
   public attrs: Object
+  public element: HTMLElement = null
 
   protected _fragment: Node
 
@@ -298,7 +299,6 @@ export class Atom extends BaseAtom {
 
   public tag: string
   public attrs: Object
-  public element: HTMLElement
 
   constructor(tag, attrs = {}, children = []) {
     super()

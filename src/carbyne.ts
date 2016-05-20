@@ -39,7 +39,7 @@ export type Builder = string | FnBuilder
  * @param  {Object} attrs The attributes that should go onto the final Atom.
  * @return {Atom} The instanciated Atom.
  */
-export function c(elt: Builder, attrs: any = {}, children: Array<any> = []) : Atom {
+export function c(elt: Builder, attrs: any = {}, children: Array<any> = []) : BaseAtom {
   var atom = null
 
   var special_attrs = ['id', 'tabindex']
