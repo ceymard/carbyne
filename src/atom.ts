@@ -108,15 +108,8 @@ export class BaseAtom extends Eventable {
   broadcast(event, ...args) {
     event = this._mkEvent(event)
     const res = this.trigger(event, ...args)
-    if (!event.propagating) return
 
-    this.atomChildren().forEach(child => child.broadcast(event, ...args))
-    // var children = this.children
-    // for (var i = 0; i < children.length; i++) {
-    //   if (children[i] instanceof BaseAtom) {
-    //     (<BaseAtom>children[i]).broadcast(event, ...args)
-    //   }
-    // }
+    this.atomChildren().map(child => child.broadcast(event, ...args))
     return res
   }
 
@@ -249,7 +242,8 @@ export class BaseAtom extends Eventable {
     this._mounted = false
 
     if (this.parent) this.parent.removeChild(this)
-    return Promise.all(this.broadcast('unmount:before') || [])
+    var before = this.broadcast('unmount:before')
+    return Promise.all(before || [])
       .then(e => this._unmountFromDOM())
       .then(e => {
         return this.trigger('unmount')

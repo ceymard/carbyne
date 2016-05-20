@@ -22,6 +22,7 @@ export interface BasicAttributes {
   class?: O<string>
   width?: O<string>
   height?: O<string>
+  $$?: any
 }
 
 export type FnBuilder = (a: BasicAttributes, children: Array<any>) => BaseAtom
