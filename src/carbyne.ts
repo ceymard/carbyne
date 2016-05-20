@@ -1,4 +1,3 @@
-
 export {bind, click, cls, ctrl} from './decorators'
 export {Controller} from './controller'
 export {o, Observable, O, ArrayObservable, Observer} from './observable'
