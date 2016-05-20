@@ -1,7 +1,7 @@
 
 export {bind, click, cls, ctrl} from './decorators'
 export {Controller} from './controller'
-export {o, Observable, O, ArrayObservable} from './observable'
+export {o, Observable, O, ArrayObservable, Observer} from './observable'
 export {Atom, ObservableAtom, VirtualAtom, BaseAtom} from './atom'
 export {Eventable} from './eventable'
 export {pathget, pathset, identity, noop, clonedeep, merge, debounce} from './helpers'

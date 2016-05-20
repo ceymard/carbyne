@@ -146,7 +146,7 @@ export class BaseAtom extends Eventable {
    *                       recursive: boolean
    * @return {Controller}      The controller instance if found.
    */
-  getController(cls, recursive = true) {
+  getController<T extends Controller>(cls: new(...a: Array<any>) => T, recursive: boolean = true) : T {
 
     let res = null
     let atom: BaseAtom = this
@@ -154,7 +154,7 @@ export class BaseAtom extends Eventable {
     while (atom) {
       for (let ctrl of atom._controllers) {
         if (ctrl instanceof cls) {
-          return ctrl
+          return ctrl as T
         }
       }
 

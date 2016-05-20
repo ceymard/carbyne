@@ -1,11 +1,11 @@
 
 import {Eventable} from './eventable'
 import {Observable, Observer} from './observable'
-import {Atom} from './atom'
+import {BaseAtom} from './atom'
 
 export class Controller extends Eventable {
 
-  public atom : Atom
+  public atom : BaseAtom
 
   constructor() {
     super()
