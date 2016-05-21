@@ -1,7 +1,7 @@
 
 import {identity, forceString} from './helpers'
-import {Observable, o, O} from './observable'
-import {Eventable} from './eventable'
+import {Observable, o, O, Observer} from './observable'
+import {Eventable, CarbyneEvent, CarbyneListener} from './eventable'
 import {Controller} from './controller'
 
 /**
@@ -26,11 +26,13 @@ import {Controller} from './controller'
 
 export type Element = Atom | Node
 
+export type AppendableElement = string | number | boolean | Atom | Node
+export type AppendableBuilder = () => AppendableElement
+export type AppendableSingle = AppendableElement | AppendableBuilder
+export type Appendable = AppendableElement | Array<AppendableElement>
+
 export interface BasicAttributes {
-  id?: O<string>
-  class?: O<string>
-  width?: O<string>
-  height?: O<string>
+  [name: string]: O<string>
   $$?: any
 }
 
@@ -92,7 +94,7 @@ export class Atom extends Eventable {
   public tag: string = ''
   public parent: Atom = null
   public children: Array<Element> = []
-  public attrs: Object = {}
+  public attrs: {[name: string]: O<string>} = {}
   public element: HTMLElement = null
 
   protected _fragment: Node = null
@@ -100,7 +102,7 @@ export class Atom extends Eventable {
   protected _destroyed: boolean = false
   protected _controllers: Array<Controller> = []
 
-  constructor(tag: string, attrs: BasicAttributes = {}, children = []) {
+  constructor(tag: string, attrs: BasicAttributes = {}, children: Element[] = []) {
     super()
 
     this.tag = tag
@@ -111,10 +113,10 @@ export class Atom extends Eventable {
   /**
    * Trigger an event on the curernt node and its parent, recursively.
    */
-  emit(event, ...args) {
+  emit(event: CarbyneEvent, ...args: any[]) {
     event = this._mkEvent(event)
     const res = this.trigger(event, ...args)
-    if (this.parent && event.propagating)
+    if (this.parent)
       this.parent.emit(event, ...args)
     return res
   }
@@ -123,7 +125,7 @@ export class Atom extends Eventable {
    * Trigger an event on the current node and all of its
    * children nodes, recursively.
    */
-  broadcast(event, ...args) {
+  broadcast(event: CarbyneEvent, ...args: any[]) {
     event = this._mkEvent(event)
     const res = this.trigger(event, ...args)
 
@@ -136,11 +138,10 @@ export class Atom extends Eventable {
    * to the life cycle of an atom. It accepts non-observables as well,
    * simply calling `cbk` with the value immediately.
    */
-  observe(obs, cbk) {
+  observe<T>(obs: O<T>, cbk: Observer<T>): Atom {
 
     if (obs instanceof Observable) {
-      let unregister = obs.addObserver(cbk)
-      this.on('destroy', unregister)
+      this.on('destroy', obs.addObserver(cbk))
     } else {
       cbk(obs)
     }
@@ -151,9 +152,9 @@ export class Atom extends Eventable {
   /**
    * Wrapper to listen to events from an HtmlElement
    */
-  listen(event, cbk) {
+  listen(event: string, cbk: EventListener) {
     if (!this.element)
-      this.on('create', this.listen.bind(this, event, cbk))
+      this.on('create', () => this.listen(event, cbk))
     else {
       this.element.addEventListener(event, cbk)
       this.on('destroy:before', () => this.element.removeEventListener(event, cbk))
@@ -175,7 +176,6 @@ export class Atom extends Eventable {
    */
   getController<T extends Controller>(cls: new(...a: Array<any>) => T, recursive: boolean = true) : T {
 
-    let res = null
     let atom: Atom = this
 
     while (atom) {
@@ -197,7 +197,7 @@ export class Atom extends Eventable {
    * Add another controller to this node.
    * @param {[type]} cn [description]
    */
-  addController(cn) {
+  addController(cn: Controller): void {
     this._controllers.push(cn)
     cn.setAtom(this)
   }
@@ -227,11 +227,16 @@ export class Atom extends Eventable {
 
     this.trigger('mount:before')
     parent.insertBefore(this.element, before)
+    // FIXME this is plain erroneous ; at this point, we have only
+    // added the element on a documentFragment for all we know, which
+    // means this.element *can't* access parentNode !
     this.trigger('mount')
   }
 
-  append(child) {
-    if (typeof child === 'function') child = child()
+  append(child: Appendable): Element {
+    // FIXME this ugly hack is due to the fact that I can't seem to
+    // cast child as an AppendableBuilder. Is this a typescript bug ?
+    if (typeof child === 'function') child = <any>((<any>child)())
 
     if (child == null) return null
 
@@ -240,8 +245,8 @@ export class Atom extends Eventable {
       return null
     }
 
-    child = _getAtom(child, this)
-    this.children.push(child)
+    var elt: Element = _getAtom(child, this)
+    this.children.push(elt)
 
     if (this._mounted) {
       // We'll try to mount the child to ourself.
@@ -253,7 +258,7 @@ export class Atom extends Eventable {
         this._fragment = document.createDocumentFragment()
       }
 
-      _mount(child, this._fragment)
+      _mount(elt, this._fragment)
 
       if (initiated) {
         this._addFragment()
@@ -261,12 +266,12 @@ export class Atom extends Eventable {
       }
     }
 
-    return child
+    return elt
   }
 
-  _setAttribute(name: string, obs) {
-    this.observe(obs, val => {
-      if (val !== undefined)
+  _setAttribute(name: string, obs: O<string>) {
+    this.observe<string>(obs, val => {
+      if (val != undefined)
         this.element.setAttribute(name, forceString(val))
       else
         this.element.removeAttribute(name)
@@ -289,7 +294,7 @@ export class Atom extends Eventable {
     return <Array<Atom>>this.children.filter(child => child instanceof Atom)
   }
 
-  removeChild(child) {
+  removeChild(child: Atom) {
     // This does not remove element from the DOM !
     // But maybe it should...
     let idx = this.children.indexOf(child)
@@ -416,18 +421,16 @@ export class VirtualAtom extends Atom {
  * It uses an Atom without a tag, which means it will be using
  * comment nodes to insert its contents.
  */
-export class ObservableAtom<T> extends VirtualAtom {
+export class ObservableAtom<T extends Appendable> extends VirtualAtom {
 
   public obs: Observable<T>
 
-  private next_value: T
-  private last_was_text: boolean
+  private next_value: T = null
+  private last_was_text: boolean = false
 
-  constructor(obs) {
+  constructor(obs: Observable<T>) {
     super('observer')
     this.obs = obs
-    this.last_was_text = false
-    this.next_value = null
   }
 
   mount(parent: Node, before: Node = null) {
