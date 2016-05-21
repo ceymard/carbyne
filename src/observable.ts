@@ -9,7 +9,7 @@ const IS_CHILD = 1
 const IS_ANCESTOR = 2
 const IS_UNRELATED = 3
 
-function _get_ancestry(p1, p2) {
+function _get_ancestry(p1: string, p2: string) {
   p1 = '' + (p1 || '')
   p2 = '' + (p2 || '')
 
@@ -53,7 +53,7 @@ export class Observable<T> {
     return this._value
   }
 
-  getp<U>(prop) : U {
+  getp<U>(prop: string) : U {
     return pathget<U>(this._value, prop)
   }
 
@@ -103,7 +103,7 @@ export class Observable<T> {
     return new PropObservable<T, U>(this, prop)
   }
 
-  p<U>(prop): PropObservable<T, U> {
+  p<U>(prop: string): PropObservable<T, U> {
     return this.prop<U>(prop)
   }
 
@@ -111,16 +111,16 @@ export class Observable<T> {
     if (typeof transformer === 'function') {
       return new TransformObservable<T, U>(this, {get: transformer as TransformFn<T, U>})
     }
-    return new TransformObservable<T, U>(this, transformer)
+    return new TransformObservable<T, U>(this, transformer as Transformer<T, U>)
   }
 
-  tfp<U>(prop: string, transformer: Transformer<T, U> | TransformFn<T, U>): TransformObservable<T, U> {
+  tfp<U, V>(prop: string, transformer: Transformer<U, V> | TransformFn<U, V>): TransformObservable<U, V> {
 
     let obs = this.prop<U>(prop)
     if (typeof transformer === 'function') {
-      return new TransformObservable<T, U>(obs, {get: transformer as TransformFn<T, U>})
+      return new TransformObservable<U, V>(obs, {get: transformer as TransformFn<U, V>})
     }
-    return new TransformObservable<T, U>(obs, transformer)
+    return new TransformObservable<U, V>(obs, transformer as Transformer<U, V>)
 
   }
 
@@ -128,23 +128,23 @@ export class Observable<T> {
    *  Boolean methods
    */
 
-  gt(value): Observable<boolean> {
+  gt(value: any): Observable<boolean> {
     return this.tf<boolean>({ get: val => val > value })
   }
 
-  lt(value): Observable<boolean> {
+  lt(value: any): Observable<boolean> {
     return this.tf({ get: val => val < value })
   }
 
-  eq(value): Observable<boolean> {
+  eq(value: any): Observable<boolean> {
     return this.tf({ get: val => val === value })
   }
 
-  gte(value): Observable<boolean> {
+  gte(value: any): Observable<boolean> {
     return this.tf({ get: val => val >= value })
   }
 
-  lte(value): Observable<boolean> {
+  lte(value: any): Observable<boolean> {
     return this.tf({get: val => val <= value})
   }
 
@@ -265,11 +265,11 @@ export class ArrayObservable<T> extends Observable<Array<T>> {
 
   //////////////////////////////////////
 
-  map(fn) {
+  map(fn: any) { // FIXME this is ugly
     return this.tf({ get: arr => Array.isArray(arr) ? arr.map(fn) : [] })
   }
 
-  filter(fn) {
+  filter(fn: any) { // FIXME this is ugly
     return this.tf({ get: arr => Array.isArray(arr) ? arr.filter(fn) : [] })
   }
 
@@ -297,7 +297,7 @@ export class PropObservable<T, U> extends Observable<U> {
     return this._value
   }
 
-  getp(prop) {
+  getp(prop: string) {
     if (!this._unregister) {
       this._refresh()
     }
@@ -312,7 +312,7 @@ export class PropObservable<T, U> extends Observable<U> {
     return this._obs.setp<V>(pathjoin(this._prop, prop), value)
   }
 
-  _refresh(ancestry?, prop?) {
+  _refresh(ancestry?: number, prop: string = '') {
     const old_val = this._value
     const new_val = this._value = this._obs.getp<U>(this._prop)
 
@@ -325,10 +325,8 @@ export class PropObservable<T, U> extends Observable<U> {
     const subprop = ancestry === IS_ANCESTOR ? prop.replace(this._prop + '.', '') : null
 
     if (changed) {
-      var obs = this._observers
-      var i = null
-      for (i = 0; i < obs.length; i++)
-        obs[i](new_val, subprop)
+      for (let ob of this._observers)
+        ob(new_val, subprop)
     }
   }
 
@@ -357,7 +355,7 @@ export class TransformObservable<T, U> extends Observable<U> {
   _obs: Observable<T>
   _unregister: () => void
 
-  constructor(obs, transformer) {
+  constructor(obs: Observable<T>, transformer: Transformer<T, U>) {
     super(undefined) // !!!
     this._obs = obs
     this._transformer = transformer
@@ -374,16 +372,13 @@ export class TransformObservable<T, U> extends Observable<U> {
     return this._value
   }
 
-  _refresh(value) {
+  _refresh(value: T) {
     const old_val = this._value
     const new_val = this._value = this._transformer.get(value)
     const changed = old_val !== new_val
-    var i = null
-    var obs = this._observers
 
     if (changed) {
-      var i = null
-      for (i = 0; i < obs.length; i++) obs[i](new_val, null)
+      for (let ob of this._observers) ob(new_val, null)
     }
   }
 
@@ -431,7 +426,7 @@ export class DependentObservable<T> extends Observable<T> {
 
   _ignore_updates: boolean
 
-  constructor(deps, fn) {
+  constructor(deps: any[], fn: (...arg: any[]) => T) {
     super(undefined)
 
     this._resolved = null
@@ -473,7 +468,7 @@ export class DependentObservable<T> extends Observable<T> {
     for (i = 0; i < obs.length; i++) obs[i](new_val, '')
   }
 
-  addObserver(fn) {
+  addObserver(fn: Observer<T>) {
     if (this._observers.length === 0) {
       // Set up the observing.
 
@@ -488,7 +483,7 @@ export class DependentObservable<T> extends Observable<T> {
           continue
         }
 
-        this._unregister.push(obs.addObserver(((idx, value) => {
+        this._unregister.push(obs.addObserver(((idx: number, value: any) => {
           this._resolved[idx] = value
           this._refresh()
         }).bind(this, idx)))
@@ -500,7 +495,7 @@ export class DependentObservable<T> extends Observable<T> {
     return super.addObserver(fn)
   }
 
-  removeObserver(fn) {
+  removeObserver(fn: Observer<T>) {
     super.removeObserver(fn)
     if (this._observers.length === 0) {
       for (let un of this._unregister) un()
@@ -564,16 +559,16 @@ export function Get(v : any) : any {
  * Setup an onchange event on the observable, or just call the
  * onchange value once if the provided o is not an observable.
  */
-export function observe(o, fn) {
+export function observe<T>(o: O<T>, fn: Observer<T>) {
   if (o instanceof Observable) return o.addObserver(fn)
   // the object is not observable, so the onchange value is immediately called.
-  fn(o)
+  fn(o as T)
   // return a function that does nothing, since nothing is being registered.
   return function() { }
 }
 
 export function Or(...args : Array<Observable<any>>) : Observable<boolean> {
-  return new DependentObservable<boolean>(args, (...args) => {
+  return new DependentObservable<boolean>(args, (...args: any[]) => {
     for (var i = 0; i < args.length; i++)
       if (args[i]) return true
     return false
@@ -581,7 +576,7 @@ export function Or(...args : Array<Observable<any>>) : Observable<boolean> {
 }
 
 export function And(...args: Array<Observable<any>>) : Observable<boolean> {
-  return new DependentObservable<boolean>(args, (...args) => {
+  return new DependentObservable<boolean>(args, (...args: any[]) => {
     for (var i = 0; i < args.length; i++)
       if (!args[i]) return false
     return true
