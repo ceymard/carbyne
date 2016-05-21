@@ -39,7 +39,7 @@ export type AppendableSingle = AppendableElement | AppendableBuilder
 export type Appendable = AppendableElement | Array<AppendableElement>
 
 export interface BasicAttributes {
-  [name: string]: O<string>
+  [name: string]: any
   $$?: any
 }
 
