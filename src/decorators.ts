@@ -143,16 +143,16 @@ export function once(name: string, cbk: CarbyneListener) {
 }
 
 
-export function click(cbk: EventListener) {
+export function click(cbk: (ev: Event, atom: Atom) => any) {
 
-    return function clickDecorator(atom: Atom): Atom {
+  return function clickDecorator(atom: Atom): Atom {
 
-      atom.on('create', function (event: CarbyneEvent) {
-        event.target.listen('click', (ev: Event) => cbk.call(atom, ev, atom))
-      })
+    atom.on('create', function (event: CarbyneEvent) {
+      event.target.listen('click', (ev: Event) => cbk(ev, atom))
+    })
 
-      return atom
-    }
+    return atom
+  }
 
 }
 
