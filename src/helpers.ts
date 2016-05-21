@@ -52,7 +52,7 @@ export function noop() { }
  * @param  {Any} i The value that will be returned
  * @return {Any}   i
  */
-export function identity(i) { return i }
+export function identity(i: any) { return i }
 
 
 export function forceString(val : any) {
@@ -67,8 +67,8 @@ export function forceString(val : any) {
  * @param  {[string]} ...args [description]
  * @return {string}           [description]
  */
-export function pathjoin(...args : Array<string>) : string {
-  const pathes = []
+export function pathjoin(...args : string[]) : string {
+  const pathes: string[] = []
   for (let pth of args) {
     if (pth) pathes.push(pth)
   }
@@ -81,9 +81,9 @@ export function pathjoin(...args : Array<string>) : string {
  */
 export function clonedeep(obj : any) : any {
   if (obj instanceof Array)
-    return obj.map(elt => clonedeep(elt))
+    return obj.map((elt: any) => clonedeep(elt))
   if ('object' === typeof obj) {
-    var res = {}
+    var res: any = {}
     for (var prop in obj)
       res[prop] = clonedeep(obj[prop])
     return res
@@ -92,7 +92,7 @@ export function clonedeep(obj : any) : any {
 }
 
 
-export function merge(dst : Object, src : Object) : Object {
+export function merge(dst: any, src: any): any {
   for (var x in src) {
     dst[x] = src[x]
   }
@@ -101,10 +101,10 @@ export function merge(dst : Object, src : Object) : Object {
 
 export function debounce(fn : Function, ms : number) : Function {
   let last_call = new Date
-  let cancel_id = null
+  let cancel_id: number = null
   let self = this
 
-  return function debouncedWrapper(...args) {
+  return function debouncedWrapper(...args: any[]) {
     if (cancel_id) {
       clearTimeout(cancel_id)
       cancel_id = null

@@ -2,8 +2,8 @@
 import {Atom} from './atom'
 import {o, O} from './observable'
 
-export function If(cond, fn, fnelse?) {
-  return o(cond, val => val ? fn(val) : (fnelse ? fnelse(val) : null))
+export function If(cond: any, fn: any, fnelse?: any) {
+  return o(cond, (val: any) => val ? fn(val) : (fnelse ? fnelse(val) : null))
 }
 
 export function Then(fn: any) { return fn }

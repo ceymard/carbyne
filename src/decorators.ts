@@ -1,8 +1,7 @@
 
 import {Controller} from './controller'
 import {Observable, O} from './observable'
-import {Atom} from './atom'
-import {CarbyneEvent, CarbyneListener} from './eventable'
+import {Atom, CarbyneEvent, CarbyneListener} from './atom'
 
 
 export type BindControllerOptions = {
@@ -86,8 +85,9 @@ export class BindController extends Controller {
         atom.listen('change', fromEvent)
         break
       case 'checkbox':
-        atom.observe(obs, (val) => element.checked = val == true)
-        atom.listen('change', () => obs.set(element.checked))
+        // FIXME ugly hack because we specified string
+        atom.observe(obs, (val: any) => element.checked = val == true)
+        atom.listen('change', () => (obs as Observable<any>).set(element.checked))
         break
       // case 'number':
       // case 'text':
