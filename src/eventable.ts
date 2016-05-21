@@ -1,13 +1,8 @@
 
-var ident = 0
-
-export type CarbyneEventObj = {
+export type CarbyneEvent = {
   type: string
   target: Eventable
 }
-
-export type CarbyneEvent = CarbyneEventObj | string
-
 
 export type CarbyneListener = (ev: CarbyneEvent, ...args: Array<any>) => any
 
@@ -26,23 +21,21 @@ export class Eventable {
 
   /////////////////////////////////////////////////////////////////
 
-  _mkEvent(event : CarbyneEvent) : CarbyneEventObj {
-    if (typeof event === 'string')
+  _mkEvent(event : CarbyneEvent | string) : CarbyneEvent {
+    if (typeof event === 'string') {
       return {
         type: event,
         target: this
       }
-    let e = {}
-    let x = null
-    for (x in <CarbyneEventObj>event)
-      e[x] = event[x]
-    return <CarbyneEventObj>e
+    }
+
+    // FIXME no more copy
+    return event as CarbyneEvent
   }
 
   on(name: string, fn: CarbyneListener) {
     if (!(name in this._listeners)) this._listeners[name] = []
-    ident++
-    this._listeners[name][ident] = fn
+    this._listeners[name].push(fn)
     return this
   }
 
@@ -69,15 +62,15 @@ export class Eventable {
    * @param {[type]} event   [description]
    * @param {[type]} ...args [description]
    */
-  trigger(event: CarbyneEvent, ...args) {
+  trigger(event: CarbyneEvent | string, ...args: any[]) {
     let event_obj = this._mkEvent(event)
     var result = []
-    var listeners = this._listeners[event_obj.type] || {}
-    var a = [event_obj].concat(args)
+    var listeners = this._listeners[event_obj.type] || []
 
-    for (var id in listeners) {
+    for (let ls of listeners) {
+      console.log(ls)
       // result.push(listeners[id].call(this, event, ...args))
-      result.push(listeners[id].apply(this, a))
+      result.push(ls(event_obj, ...args))
     }
 
     return result

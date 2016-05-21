@@ -147,8 +147,8 @@ export function click(cbk: EventListener) {
 
     return function clickDecorator(atom: Atom): Atom {
 
-      atom.once('create', function () {
-        this.listen('click', (ev: Event) => cbk.call(atom, ev, atom))
+      atom.on('create', function (event: CarbyneEvent) {
+        event.target.listen('click', (ev: Event) => cbk.call(atom, ev, atom))
       })
 
       return atom
@@ -189,7 +189,7 @@ export class ClassController extends Controller {
 
       let old: string = null
       this.atom.observe(def, name => {
-        if (old !== name)
+        if (old !== name && old != null)
           list.remove(...old.split(/\s+/))
         old = name
         list.add(...name.split(/\s+/))
@@ -232,4 +232,3 @@ export function cls(...args: ClassDefinition[]) {
   }
 
 }
-

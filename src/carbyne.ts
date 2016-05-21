@@ -17,10 +17,6 @@ import {o, Observable, O} from './observable'
 var _re_elt_name = /^[^\.#]*/
 var _re_cls_or_id = /[\.#][^\.#]+/g
 
-var _add_cls = (attrs, added) => {
-  attrs.class = attrs.class ? o(attrs.class, added, (o1, o2) => `${o1} ${o2}`) : added
-}
-
 export type FnBuilder = (a: BasicAttributes, children: Array<any>) => Atom
 export type Builder = string | FnBuilder
 
@@ -41,10 +37,10 @@ export interface C {
  * @return {Atom} The instanciated Atom.
  */
 export var c: C = function c(elt: Builder, attrs: any = {}, children: Array<any> = []) : Atom {
-  var atom = null
+  var atom: Atom = null
 
-  var special_attrs = ['id', 'tabindex']
-  var i = null
+  var special_attrs: string[] = ['id', 'tabindex']
+  var i = 0
   var children = []
   for (i = 2; i < arguments.length; i++)
     children.push(arguments[i])
@@ -61,11 +57,13 @@ export var c: C = function c(elt: Builder, attrs: any = {}, children: Array<any>
   if (typeof elt === 'string') {
 
     let str_elt = <string>elt
+    let classes: string[] = []
     // Add to class the .<class name> part or set the id if the provided
     // string had a #<id> in it.
     str_elt.replace(_re_cls_or_id, match => {
       if (match[0] === '.') {
-        _add_cls(attrs, match.slice(1))
+        // _add_cls(attrs, match.slice(1))
+        classes.push(match.slice(1))
       } else attrs.id = match.slice(1)
       return ''
     })
@@ -74,27 +72,22 @@ export var c: C = function c(elt: Builder, attrs: any = {}, children: Array<any>
 
     // If we have a string, then it is a simple html element.
     atom = new Atom(str_elt, attrs, children)
+    if (classes.length) cls(...classes)(atom)
 
   } else if (typeof elt === 'function') {
     // If it is a function, then the element is composite.
     atom = elt(attrs, children)
-    atom.builder = elt
+    // atom.builder = elt
 
-    // The following code forwards diverse and common html attributes automatically.
     if (attrs.class) {
-      if (atom.attrs.class)
-        // NOTE the fact that we use o() does not necessarily create an Observable ;
-        // if neither of the class attributes are, then the function returns directly
-        // with the value.
-        _add_cls(atom.attrs, attrs.class)
-        // atom.attrs.class = o(attrs.class, atom.attrs.class, (c1, c2) => `${c1} ${c2}`);
-      else atom.attrs.class = attrs.class;
+      cls(attrs.class)(atom)
     }
 
     // Forward the style attriute.
+    // XXX may need a style decorator.
     if (attrs.style) {
       if (atom.attrs.style)
-        atom.attrs.style = o(attrs.style, atom.attrs.style, (c1, c2) => `${c1};${c2}`)
+        atom.attrs.style = o(attrs.style, atom.attrs.style, (c1: string, c2: string) => `${c1};${c2}`)
       else atom.attrs.style = attrs.style
     }
 
