@@ -1,6 +1,9 @@
 
 import {pathget, pathset, identity, pathjoin} from './helpers'
 
+export function isObservable<T>(o: any): o is Observable<T> {
+  return o instanceof Observable
+}
 
 const IS_CHILD = 1
 const IS_ANCESTOR = 2
@@ -204,18 +207,6 @@ export class Observable<T> {
     (this as any).set(this._value as any % m)
   }
 
-  push2(v: T) {
-    // we purposely lose type information
-    const val = this._value as any
-    if (val instanceof Array) {
-      let res = val.push(v)
-      this._change(val.length - 1)
-      this._change('length')
-      return res
-    }
-    throw new Error('watched object is not an array')
-  }
-
 }
 
 export class ArrayObservable<T> extends Observable<Array<T>> {
@@ -410,14 +401,14 @@ export class TransformObservable<T, U> extends Observable<U> {
     throw new Error('transformers cannot set subpath')
   }
 
-  addObserver(fn) {
+  addObserver(fn: Observer<U>) {
     if (!this._unregister) {
       this._unregister = this._obs.addObserver(value => this._refresh(value))
     }
     return super.addObserver(fn)
   }
 
-  removeObserver(fn) {
+  removeObserver(fn: Observer<U>) {
     super.removeObserver(fn)
     if (this._observers.length === 0) {
       this._unregister()

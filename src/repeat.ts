@@ -1,5 +1,5 @@
 
-import {VirtualAtom, BaseAtom} from './atom'
+import {VirtualAtom, Atom} from './atom'
 import {Observable} from './observable'
 
 /**
@@ -15,10 +15,10 @@ export class RepeaterAtom<T> extends VirtualAtom {
 
 	_current_length: number
 	_obs: Observable<Array<T>>
-	_fn: (o: Observable<T>, idx: number) => BaseAtom
+	_fn: (o: Observable<T>, idx: number) => Atom
 
 	constructor(obs, fn) {
-		super() // Virtual Atom
+		super('repeater') // Virtual Atom
 		this._current_length = 0
 		this._obs = obs
 		this._fn = fn

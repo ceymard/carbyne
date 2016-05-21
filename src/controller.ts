@@ -1,11 +1,11 @@
 
 import {Eventable} from './eventable'
 import {Observable, Observer} from './observable'
-import {BaseAtom, Atom} from './atom'
+import {Atom} from './atom'
 
-export class BaseController extends Eventable {
+export class Controller extends Eventable {
 
-  public atom : BaseAtom
+  public atom : Atom
 
   constructor() {
     super()
@@ -39,16 +39,6 @@ export class BaseController extends Eventable {
     atom.on('mount:before', this.onMountBefore.bind(this))
     atom.on('unmount:before', this.onUnmountBefore.bind(this))
     atom.on('destroy:before', this.onDestroyBefore.bind(this))
-  }
-
-}
-
-export class Controller extends BaseController {
-
-  public atom : Atom
-
-  listen(ev: string, fn: any) {
-    return (this.atom as Atom).listen(ev, fn)
   }
 
 }

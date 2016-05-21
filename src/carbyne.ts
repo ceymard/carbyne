@@ -1,13 +1,13 @@
 export {bind, click, cls, ctrl} from './decorators'
 export {Controller} from './controller'
 export {o, Observable, O, ArrayObservable, Observer} from './observable'
-export {Atom, ObservableAtom, VirtualAtom, BaseAtom} from './atom'
+export {Atom, ObservableAtom, VirtualAtom, BasicAttributes} from './atom'
 export {Eventable} from './eventable'
 export {pathget, pathset, identity, noop, clonedeep, merge, debounce} from './helpers'
 export {RepeaterAtom, Repeat} from './repeat'
 
 import {Controller} from './controller'
-import {BaseAtom, Atom} from './atom'
+import {Atom, BasicAttributes} from './atom'
 import {o, Observable, O} from './observable'
 
 var _re_elt_name = /^[^\.#]*/
@@ -17,17 +17,13 @@ var _add_cls = (attrs, added) => {
   attrs.class = attrs.class ? o(attrs.class, added, (o1, o2) => `${o1} ${o2}`) : added
 }
 
-export interface BasicAttributes {
-  id?: O<string>
-  class?: O<string>
-  width?: O<string>
-  height?: O<string>
-  $$?: any
-}
-
-export type FnBuilder = (a: BasicAttributes, children: Array<any>) => BaseAtom
+export type FnBuilder = (a: BasicAttributes, children: Array<any>) => Atom
 export type Builder = string | FnBuilder
 
+export interface C {
+  (elt: Builder, attrs?: any, children?: any[]): Atom
+  createElement: (elt: Builder, attrs?: any, children?: any[]) => Atom
+}
 
 /**
  * The main carbyne function.
@@ -40,7 +36,7 @@ export type Builder = string | FnBuilder
  * @param  {Object} attrs The attributes that should go onto the final Atom.
  * @return {Atom} The instanciated Atom.
  */
-export function c(elt: Builder, attrs: any = {}, children: Array<any> = []) : BaseAtom {
+export var c: C = function c(elt: Builder, attrs: any = {}, children: Array<any> = []) : Atom {
   var atom = null
 
   var special_attrs = ['id', 'tabindex']
@@ -123,7 +119,7 @@ export function c(elt: Builder, attrs: any = {}, children: Array<any> = []) : Ba
 
   // At this point, we have an atom that is ready to be inserted.
   return atom
-}
+} as C
 
 c.createElement = c
 
