@@ -2,6 +2,8 @@
 import {VirtualAtom, Atom} from './atom'
 import {Observable} from './observable'
 
+export type RepeaterFn<T> = (o: Observable<T>, idx?: number) => Atom
+
 /**
  * Use the repeater when you want to render an Array and not have its elements
  * completely re-rendered everytime the array changes (including when only a
@@ -14,10 +16,10 @@ import {Observable} from './observable'
 export class RepeaterAtom<T> extends VirtualAtom {
 
 	_current_length: number
-	_obs: Observable<Array<T>>
-	_fn: (o: Observable<T>, idx: number) => Atom
+	_obs: Observable<T[]>
+	_fn: RepeaterFn<T>
 
-	constructor(obs, fn) {
+	constructor(obs: Observable<T[]>, fn: RepeaterFn<T>) {
 		super('repeater') // Virtual Atom
 		this._current_length = 0
 		this._obs = obs
@@ -38,10 +40,10 @@ export class RepeaterAtom<T> extends VirtualAtom {
 	 * added or removed if the new array's length is different from
 	 * what we are tracking.
 	 */
-	_update(arr) {
+	_update(arr: T[]) {
 		var fn = this._fn
 
-		if (!Array.isArray(arr))
+		if (arr == null || arr.length == 0)
 			return this.empty()
 
 		if (arr.length < this._current_length) {
@@ -58,6 +60,7 @@ export class RepeaterAtom<T> extends VirtualAtom {
 		}
 
 		this._current_length = arr.length
+		return null
 	}
 
 }
@@ -69,9 +72,6 @@ export class RepeaterAtom<T> extends VirtualAtom {
  * Either use {Repeat(o_array, o_item => ...)}
  * or <Repeat obs={o_array} render={o_item => ...}/>
  */
-export function Repeat(obs, fn) {
-	if (typeof fn !== 'function') {
-		return new RepeaterAtom(obs.obs, obs.render)
-	}
-	return new RepeaterAtom(obs, fn)
+export function Repeat<T>(obs: Observable<T[]>, fn: RepeaterFn<T>) {
+	return new RepeaterAtom<T>(obs, fn)
 }

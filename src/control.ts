@@ -1,5 +1,6 @@
 
-import {o} from './observable'
+import {Atom} from './atom'
+import {o, O} from './observable'
 
 export function If(cond, fn, fnelse?) {
   return o(cond, val => val ? fn(val) : (fnelse ? fnelse(val) : null))

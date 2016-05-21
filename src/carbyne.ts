@@ -87,9 +87,9 @@ export var c: C = function c(elt: Builder, attrs: any = {}, children: Array<any>
     // Forward the style attriute.
     // XXX may need a style decorator.
     if (attrs.style) {
-      if (atom.attrs.style)
-        atom.attrs.style = o(attrs.style, atom.attrs.style, (c1: string, c2: string) => `${c1};${c2}`)
-      else atom.attrs.style = attrs.style
+      if (atom.attrs['style'])
+        atom.attrs['style'] = o(attrs.style, atom.attrs['style'], (c1: string, c2: string) => `${c1};${c2}`)
+      else atom.attrs['style'] = attrs.style
     }
 
     for (i = 0; i < special_attrs.length; i++) {
@@ -101,7 +101,7 @@ export var c: C = function c(elt: Builder, attrs: any = {}, children: Array<any>
     throw new Error('wrong type')
   }
 
-  var decorated = null
+  var decorated: Atom = null
 
   // A decorator generally sets up events and add controllers
   if (decorators) {
@@ -121,6 +121,6 @@ export var c: C = function c(elt: Builder, attrs: any = {}, children: Array<any>
 
 c.createElement = c
 
-export function Fragment(attrs, children) {
+export function Fragment(attrs: any, children: any[]) {
   return children
 }
