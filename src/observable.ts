@@ -54,27 +54,28 @@ export class Observable<T> {
     return pathget<U>(this._value, prop)
   }
 
-  set(value : T) {
-
-    // if (value instanceof Observable) value = value._value
-
+  set(value : T): boolean {
     let changed = false
     changed = this._value !== value
     this._value = value
     if (changed) {
       this._change('')
     }
-
+    return changed
   }
 
-  setp<U>(prop : string, value : U) {
+  setp<U>(prop : string, value : U) : boolean {
 
-    if (pathset(this._value, prop, value))
+    if (pathset(this._value, prop, value)) {
       this._change(prop)
+      return true
+    }
+
+    return false
 
   }
 
-  _change(prop : string | number) {
+  _change(prop : string | number) : void {
     const val = this._value
     const obss = this._observers
     const final_prop = (prop||'').toString()
@@ -82,13 +83,13 @@ export class Observable<T> {
       obss[i](val, final_prop)
   }
 
-  addObserver(fn : Observer<T>) {
+  addObserver(fn : Observer<T>) : () => void {
     this._observers.push(fn)
     fn(this._value)
-    return this.removeObserver.bind(this, fn)
+    return () => this.removeObserver(fn)
   }
 
-  removeObserver(fn : Observer<T>) {
+  removeObserver(fn : Observer<T>) : void {
     const index = this._observers.indexOf(fn)
     if (index > -1) {
       this._observers.splice(index, 1)
@@ -99,76 +100,73 @@ export class Observable<T> {
     return new PropObservable<T, U>(this, prop)
   }
 
-  p(prop) {
-    return this.prop.apply(this, arguments)
+  p<U>(prop): PropObservable<T, U> {
+    return this.prop<U>(prop)
   }
 
-  tf<U>(transformer : Transformer<T, U> | TransformFn<T, U>) {
+  tf<U>(transformer : Transformer<T, U> | TransformFn<T, U>) : TransformObservable<T, U> {
     if (typeof transformer === 'function') {
-      return new TransformObservable(this, {get: transformer as TransformFn<T, U>})
+      return new TransformObservable<T, U>(this, {get: transformer as TransformFn<T, U>})
     }
-    return new TransformObservable(this, transformer)
+    return new TransformObservable<T, U>(this, transformer)
   }
 
-  tfp<U>(prop : string, transformer : Transformer<T, U> | TransformFn<T, U>) {
+  tfp<U>(prop: string, transformer: Transformer<T, U> | TransformFn<T, U>): TransformObservable<T, U> {
 
     let obs = this.prop<U>(prop)
     if (typeof transformer === 'function') {
-      return new TransformObservable(obs, {get: transformer as TransformFn<T, U>})
+      return new TransformObservable<T, U>(obs, {get: transformer as TransformFn<T, U>})
     }
-    return new TransformObservable(obs, transformer)
+    return new TransformObservable<T, U>(obs, transformer)
 
   }
-
-  transform() { return this.tf.apply(this, arguments) }
-  transformp() { return this.tfp.apply(this, arguments) }
 
   /**
    *  Boolean methods
    */
 
-  gt(value) {
-    return this.tf({get: val => val > value})
+  gt(value): Observable<boolean> {
+    return this.tf<boolean>({ get: val => val > value })
   }
 
-  lt(value) {
-    return this.tf({get: val => val < value})
+  lt(value): Observable<boolean> {
+    return this.tf({ get: val => val < value })
   }
 
-  eq(value) {
-    return this.tf({get: val => val === value})
+  eq(value): Observable<boolean> {
+    return this.tf({ get: val => val === value })
   }
 
-  gte(value) {
-    return this.tf({get: val => val >= value})
+  gte(value): Observable<boolean> {
+    return this.tf({ get: val => val >= value })
   }
 
-  lte(value) {
+  lte(value): Observable<boolean> {
     return this.tf({get: val => val <= value})
   }
 
-  isNull() {
+  isNull(): Observable<boolean> {
     return this.tf({get: val => val == null})
   }
 
-  isNotNull() {
-    return this.tf({get: val => val != null})
+  isNotNull(): Observable<boolean> {
+    return this.tf({ get: val => val != null })
   }
 
-  isUndefined() {
-    return this.tf({get: val => val === undefined})
+  isUndefined(): Observable<boolean> {
+    return this.tf({ get: val => val === undefined })
   }
 
-  isDefined() {
-    return this.tf({get: val => val !== undefined})
+  isDefined(): Observable<boolean> {
+    return this.tf({ get: val => val !== undefined })
   }
 
-  isFalse() {
-    return this.tf({get: val => <any>val === false})
+  isFalse(): Observable<boolean> {
+    return this.tf({ get: val => val as any === false })
   }
 
-  isTrue() {
-    return this.tf({get: val => <any>val === true})
+  isTrue(): Observable<boolean> {
+    return this.tf({get: val => val as any === true})
   }
 
   // FIXME should we do reduce ?
@@ -185,27 +183,38 @@ export class Observable<T> {
   }
 
   // Some basic modification functions
-  add(inc) {
-    (<any>this).set(<any>this._value + inc)
+  // **These methods are *not* type safe !**
+  add(inc: number) {
+    (this as any).set(this._value as any + inc)
   }
 
-  sub(dec) {
-    (<any>this).set(<any>this._value - dec)
+  sub(dec: number) {
+    (this as any).set(this._value as any - dec)
   }
 
-  mul(coef) {
-    (<any>this).set(<any>this._value * coef)
+  mul(coef: number) {
+    (this as any).set(this._value as any * coef)
   }
 
-  div(coef) {
-    (<any>this).set(<any>this._value / coef)
+  div(coef: number) {
+    (this as any).set(this._value as any / coef)
   }
 
-  mod(m) {
-    (<any>this).set(<any>this._value % m)
+  mod(m: number) {
+    (this as any).set(this._value as any % m)
   }
 
-
+  push2(v: T) {
+    // we purposely lose type information
+    const val = this._value as any
+    if (val instanceof Array) {
+      let res = val.push(v)
+      this._change(val.length - 1)
+      this._change('length')
+      return res
+    }
+    throw new Error('watched object is not an array')
+  }
 
 }
 
@@ -304,12 +313,12 @@ export class PropObservable<T, U> extends Observable<U> {
     return pathget(this._value, prop)
   }
 
-  set(value) {
-    this._obs.setp(this._prop, value)
+  set(value: U): boolean {
+    return this._obs.setp(this._prop, value)
   }
 
-  setp(prop, value) {
-    this._obs.setp(pathjoin(this._prop, prop), value)
+  setp<V>(prop: string, value: V): boolean {
+    return this._obs.setp<V>(pathjoin(this._prop, prop), value)
   }
 
   _refresh(ancestry?, prop?) {
@@ -391,13 +400,13 @@ export class TransformObservable<T, U> extends Observable<U> {
    * The transform observable does not set itself directly. Instead, it
    * forwards the set to its observed.
    */
-  set(value) {
+  set(value: U): boolean {
 
-    this._obs.set(this._transformer.set(value))
+    return this._obs.set(this._transformer.set(value))
 
   }
 
-  setp(prop, value) {
+  setp<V>(prop: string, value: V) : boolean {
     throw new Error('transformers cannot set subpath')
   }
 
@@ -442,21 +451,21 @@ export class DependentObservable<T> extends Observable<T> {
     this._ignore_updates = false
   }
 
-  get() {
+  get(): T {
     if (this._observers.length === 0) this._refresh()
     return this._value
   }
 
-  getp(prop) {
+  getp<U>(prop: string): U {
     if (this._observers.length === 0) this._refresh()
-    return pathget(this._value, prop)
+    return pathget(this._value, prop) as U
   }
 
-  set() {
+  set(v: T): boolean {
     throw new Error('cannot set on a DependentObservable')
   }
 
-  setp() {
+  setp<V>(p: string, v: V): boolean {
     throw new Error('cannot set on a DependentObservable')
   }
 
