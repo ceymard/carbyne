@@ -1,7 +1,6 @@
 
 import {identity, forceString} from './helpers'
 import {Observable, o, O, Observer} from './observable'
-import {Eventable, CarbyneEvent, CarbyneListener} from './eventable'
 import {Controller} from './controller'
 
 /**
@@ -23,6 +22,14 @@ import {Controller} from './controller'
   destroy:before: Before unloading the tree and calling the destroyers
   destroy: Right after that.
  */
+
+export type CarbyneEvent = {
+  type: string
+  target: Atom
+}
+
+export type CarbyneListener = (ev: CarbyneEvent, ...args: Array<any>) => any
+
 
 export type Element = Atom | Node
 
@@ -89,7 +96,7 @@ function _unmount(child: Element): Promise<any> {
 /**
  *
  */
-export class Atom extends Eventable {
+export class Atom {
 
   public tag: string = ''
   public parent: Atom = null
@@ -101,19 +108,77 @@ export class Atom extends Eventable {
   protected _mounted: boolean = false
   protected _destroyed: boolean = false
   protected _controllers: Array<Controller> = []
+  protected _listeners: {
+    [key: string]: Array<CarbyneListener>
+  } = null
 
   constructor(tag: string, attrs: BasicAttributes = {}, children: Element[] = []) {
-    super()
-
     this.tag = tag
     this.attrs = attrs
     this.children = children
   }
 
+  _mkEvent(event: CarbyneEvent | string): CarbyneEvent {
+    if (typeof event === 'string') {
+      return {
+        type: event,
+        target: this
+      }
+    }
+
+    // FIXME no more copy
+    return event as CarbyneEvent
+  }
+
+  on(name: string, fn: CarbyneListener) {
+    if (!this._listeners) this._listeners = {}
+    if (!(name in this._listeners)) this._listeners[name] = []
+    this._listeners[name].push(fn)
+    return this
+  }
+
+  off(name: string, fn: CarbyneListener) {
+    /// FIXME this is probably severely bugged
+    let idx = (this._listeners[name] || []).indexOf(fn)
+    if (idx > 1)
+      delete this._listeners[name][idx]
+    return this
+  }
+
+  once(name: string, fn: CarbyneListener) {
+    let self = this
+    let cbk = function() {
+      fn.apply(this, arguments)
+      self.off(name, cbk)
+    }
+    this.on(name, cbk)
+    return this
+  }
+
+  /**
+   * Call all the listeners on the event
+   * @param {[type]} event   [description]
+   * @param {[type]} ...args [description]
+   */
+  trigger(event: CarbyneEvent | string, ...args: any[]) {
+    if (!this._listeners) return
+
+    let event_obj = this._mkEvent(event)
+    var result: any[] = [] // FIXME
+    var listeners = this._listeners[event_obj.type] || []
+
+    for (let ls of listeners) {
+      result.push(ls(event_obj, ...args))
+    }
+
+    return result
+  }
+
+
   /**
    * Trigger an event on the curernt node and its parent, recursively.
    */
-  emit(event: CarbyneEvent, ...args: any[]) {
+  emit(event: CarbyneEvent|string, ...args: any[]) {
     event = this._mkEvent(event)
     const res = this.trigger(event, ...args)
     if (this.parent)
@@ -125,7 +190,7 @@ export class Atom extends Eventable {
    * Trigger an event on the current node and all of its
    * children nodes, recursively.
    */
-  broadcast(event: CarbyneEvent, ...args: any[]) {
+  broadcast(event: CarbyneEvent|string, ...args: any[]) {
     event = this._mkEvent(event)
     const res = this.trigger(event, ...args)
 
