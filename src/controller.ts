@@ -3,12 +3,11 @@ import {Eventable} from './eventable'
 import {Observable, Observer} from './observable'
 import {Atom} from './atom'
 
-export class Controller extends Eventable {
+export class Controller {
 
   public atom : Atom
 
   constructor() {
-    super()
     this.atom = null
   }
 

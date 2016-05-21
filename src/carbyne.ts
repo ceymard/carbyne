@@ -1,17 +1,18 @@
 export {bind, click, cls} from './decorators'
 export {Controller} from './controller'
 export {o, Observable, O, ArrayObservable, Observer} from './observable'
-export {Atom, ObservableAtom, VirtualAtom, BasicAttributes} from './atom'
+export {Atom, ObservableAtom, VirtualAtom, BasicAttributes, Appendable} from './atom'
 export {Eventable} from './eventable'
 export {pathget, pathset, identity, noop, clonedeep, merge, debounce} from './helpers'
 export {RepeaterAtom, Repeat} from './repeat'
+export {If, Then, Else, Match, Case} from './control'
 
 
 ///////////////////////////////////////////////////////////////
 
 import {cls} from './decorators'
 import {Controller} from './controller'
-import {Atom, BasicAttributes} from './atom'
+import {Atom, BasicAttributes, Appendable, AppendableBuilder} from './atom'
 import {o, Observable, O} from './observable'
 
 var _re_elt_name = /^[^\.#]*/
@@ -122,33 +123,4 @@ c.createElement = c
 
 export function Fragment(attrs, children) {
   return children
-}
-
-export function If(cond, fn, fnelse?) {
-  return o(cond, val => val ? fn(val) : (fnelse ? fnelse(val) : null))
-}
-
-export function Then(fn) { return fn }
-export function Else(fn) { return fn }
-
-export function Match(obj, ...args) {
-  return o(obj, val => {
-    var i = 0
-    var res = null
-    for (i = 0 ; i < args.length; i++) {
-      res = args[i](obj)
-      if (res) return res
-    }
-    return null
-  })
-}
-
-export function Case(test, fn) {
-  if (typeof test === 'function')
-    return function (obj) {
-      if (test(obj)) return fn(obj)
-    }
-  return function (obj) {
-    if (test === obj) return fn(obj)
-  }
 }
