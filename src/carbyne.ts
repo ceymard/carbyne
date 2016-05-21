@@ -1,4 +1,4 @@
-export {bind, click, cls, ctrl} from './decorators'
+export {bind, click, cls} from './decorators'
 export {Controller} from './controller'
 export {o, Observable, O, ArrayObservable, Observer} from './observable'
 export {Atom, ObservableAtom, VirtualAtom, BasicAttributes} from './atom'
@@ -6,6 +6,10 @@ export {Eventable} from './eventable'
 export {pathget, pathset, identity, noop, clonedeep, merge, debounce} from './helpers'
 export {RepeaterAtom, Repeat} from './repeat'
 
+
+///////////////////////////////////////////////////////////////
+
+import {cls} from './decorators'
 import {Controller} from './controller'
 import {Atom, BasicAttributes} from './atom'
 import {o, Observable, O} from './observable'
