@@ -30,8 +30,9 @@ export class RepeaterAtom<T> extends VirtualAtom {
 		super.mount(parent, before) // mount it normally
 
 		// and then create the observing logic
-		this.observe(this._obs, arr => {
-			this._update(arr)
+		this.observe(this._obs.p('length'), (len) => {
+			// only update whenever length changes.
+			this._update(this._obs.get())
 		})
 	}
 
@@ -43,8 +44,9 @@ export class RepeaterAtom<T> extends VirtualAtom {
 	_update(arr: T[]) {
 		var fn = this._fn
 
-		if (arr == null || arr.length == 0)
+		if (arr == null || arr.length == 0) {
 			return this.empty()
+		}
 
 		if (arr.length < this._current_length) {
 			// remove the elements we don't need anymore
