@@ -27,7 +27,7 @@ import {Eventable, CarbyneListener, CarbyneEvent} from './eventable'
 
 export type Element = Atom | Node
 
-export type AppendableElement = string | number | boolean | Atom | Node
+export type AppendableElement = string | number | boolean | Atom | Node | JSX.Element
 export type AppendableBuilder = (...a: any[]) => AppendableElement
 export type AppendableSingle = AppendableElement | AppendableBuilder
 export type Appendable = AppendableElement | Array<AppendableElement>
@@ -241,7 +241,7 @@ export class Atom extends Eventable<Atom> {
     if (child == null) return null
 
     if (child instanceof Array) {
-      child.forEach(c => this.append(c))
+      (child as AppendableElement[]).forEach(c => this.append(c))
       return null
     }
 

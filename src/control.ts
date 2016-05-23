@@ -29,9 +29,10 @@ export function Match<T>(obj: O<T>, ...args: ConditionalBuilder<T>[]): Observabl
 }
 
 
-export type Test<T> = (ar: T) => boolean
+export type CaseTestFn<T> = (ar: T) => boolean
+export type CaseTest<T> = T | CaseTestFn<T>
 
-export function Case<T>(test: (ar: T) => boolean | T, fn: ConditionalBuilder<T>): ConditionalBuilder<T> {
+export function Case<T>(test: CaseTest<T>, fn: ConditionalBuilder<T>): ConditionalBuilder<T> {
   if (typeof test === 'function') {
     return function(obj: T) {
       if ((test as (ar: T) => boolean)(obj)) return fn(obj)
