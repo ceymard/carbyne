@@ -92,9 +92,17 @@ export function clonedeep(obj : any) : any {
 }
 
 
+/**
+ * Do a shallow copy of src's own properties to dst and return dst.
+ * dst is modified in the process.
+ *
+ * @param  {any} dst The destination
+ * @param  {any} src the source object
+ * @return {any}     dst
+ */
 export function merge(dst: any, src: any): any {
   for (var x in src) {
-    dst[x] = src[x]
+    if (src.hasOwnProperty(x)) dst[x] = src[x]
   }
   return dst
 }
