@@ -1,19 +1,27 @@
 
-import {Atom} from './atom'
-import {o, O} from './observable'
+import {Atom, Appendable} from './atom'
+import {o, O, Observable} from './observable'
 
-export function If(cond: any, fn: any, fnelse?: any) {
-  return o(cond, (val: any) => val ? fn(val) : (fnelse ? fnelse(val) : null))
+export type ConditionalBuilder<T> = (a: T) => Appendable
+
+export function If<T>(cond: O<T>, fn: ConditionalBuilder<T>, fnelse?: ConditionalBuilder<T>): Observable<Appendable> {
+  var obs: Observable<T> = o(cond)
+  return obs.tf(val => val ? fn(val) : (fnelse ? fnelse(val) : null))
+  // return o(cond, (val: any) => val ? fn(val) : (fnelse ? fnelse(val) : null))
 }
 
-export function Then(fn: any) { return fn }
-export function Else(fn: any) { return fn }
+export function Then<T>(fn: ConditionalBuilder<T>): ConditionalBuilder<T> { return fn }
+export function Else<T>(fn: ConditionalBuilder<T>): ConditionalBuilder<T> { return fn }
 
-export function Match(obj: O<any>, ...args: any[]) {
-  return o(obj, (val: any) => {
-    let res: any = null
+
+
+export function Match<T>(obj: O<T>, ...args: ConditionalBuilder<T>[]): Observable<Appendable> {
+  var obs: Observable<T> = o(obj)
+
+  return obs.tf((val: T) => {
+    let res: Appendable = null
     for (let i = 0; i < args.length; i++) {
-      res = args[i](obj)
+      res = args[i](val)
       if (res) return res
     }
     return null
@@ -21,16 +29,18 @@ export function Match(obj: O<any>, ...args: any[]) {
 }
 
 
-// FIXME this is seriously bugged !
-export function Case(test: any, fn: (a: any) => Atom) {
+export type Test<T> = (ar: T) => boolean
+
+export function Case<T>(test: (ar: T) => boolean | T, fn: ConditionalBuilder<T>): ConditionalBuilder<T> {
   if (typeof test === 'function') {
-    return function(obj: any) {
-      if (test(obj)) return fn(obj)
+    return function(obj: T) {
+      if ((test as (ar: T) => boolean)(obj)) return fn(obj)
       return null
     }
   }
-  return function(obj: any) {
-    if (test === obj) return fn(obj)
+  return function(obj: T) {
+    // test is really T here.
+    if ((test as any) === obj) return fn(obj)
     return null
   }
 }

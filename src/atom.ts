@@ -28,7 +28,7 @@ import {Eventable, CarbyneListener, CarbyneEvent} from './eventable'
 export type Element = Atom | Node
 
 export type AppendableElement = string | number | boolean | Atom | Node
-export type AppendableBuilder = () => AppendableElement
+export type AppendableBuilder = (...a: any[]) => AppendableElement
 export type AppendableSingle = AppendableElement | AppendableBuilder
 export type Appendable = AppendableElement | Array<AppendableElement>
 
