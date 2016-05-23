@@ -1,10 +1,10 @@
 export {bind, click, cls} from './decorators'
 export {Controller} from './controller'
 export {o, Observable, O, ArrayObservable, Observer} from './observable'
-export {Atom, ObservableAtom, VirtualAtom, BasicAttributes, Appendable, CarbyneEvent, CarbyneListener} from './atom'
-export {Eventable} from './eventable'
+export {Atom, ObservableAtom, VirtualAtom, BasicAttributes, Appendable} from './atom'
 export {pathget, pathset, identity, noop, clonedeep, merge, debounce} from './helpers'
 export {RepeaterAtom, Repeat} from './repeat'
+export {Eventable, CarbyneEvent, CarbyneListener} from './eventable'
 export {If, Then, Else, Match, Case} from './control'
 
 

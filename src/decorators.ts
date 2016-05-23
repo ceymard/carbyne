@@ -1,7 +1,8 @@
 
 import {Controller} from './controller'
 import {Observable, O} from './observable'
-import {Atom, CarbyneEvent, CarbyneListener} from './atom'
+import {Atom} from './atom'
+import {CarbyneEvent, CarbyneListener} from './eventable'
 
 
 export type BindControllerOptions = {
@@ -129,14 +130,14 @@ export function bind(obs: Observable<string>, opts: BindControllerOptions = {}) 
  *   <div $$={on('create', ev => ev.target...)}
  * ```
  */
-export function on(name: string, cbk: CarbyneListener) {
+export function on(name: string, cbk: CarbyneListener<Atom>) {
   return function (atom: Atom): Atom {
     return atom.on(name, cbk)
   }
 }
 
 
-export function once(name: string, cbk: CarbyneListener) {
+export function once(name: string, cbk: CarbyneListener<Atom>) {
   return function(atom: Atom): Atom {
     return atom.once(name, cbk)
   }
@@ -147,7 +148,7 @@ export function click(cbk: (ev: Event, atom: Atom) => any) {
 
   return function clickDecorator(atom: Atom): Atom {
 
-    atom.on('create', function (event: CarbyneEvent) {
+    atom.on('create', function (event: CarbyneEvent<Atom>) {
       event.target.listen('click', (ev: Event) => cbk(ev, atom))
     })
 

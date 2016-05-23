@@ -3,3 +3,4 @@ elt
 *.js
 *.d.ts
 *.map
+._*
