@@ -10,14 +10,14 @@ export type CarbyneListener<T> = (ev: CarbyneEvent<T>, ...args: Array<any>) => a
 /**
  *
  */
-export class Eventable<T> {
+export class Eventable {
 
   protected _listeners: {
-    [key: string]: CarbyneListener<T>[]
+    [key: string]: CarbyneListener<Eventable>[]
   } = null
 
 
-  _mkEvent(event: CarbyneEvent<T> | string): CarbyneEvent<T> {
+  _mkEvent(event: CarbyneEvent<this> | string): CarbyneEvent<this> {
     if (typeof event === 'string') {
       return {
         type: event,
@@ -27,17 +27,17 @@ export class Eventable<T> {
     }
 
     // FIXME no more copy
-    return event as CarbyneEvent<T>
+    return event as CarbyneEvent<this>
   }
 
-  on(name: string, fn: CarbyneListener<T>) {
+  on(name: string, fn: CarbyneListener<this>) {
     if (!this._listeners) this._listeners = {}
     if (!(name in this._listeners)) this._listeners[name] = []
     this._listeners[name].push(fn)
     return this
   }
 
-  off(name: string, fn: CarbyneListener<T>) {
+  off(name: string, fn: CarbyneListener<this>) {
     /// FIXME this is probably severely bugged
     let idx = (this._listeners[name] || []).indexOf(fn)
     if (idx > 1)
@@ -45,7 +45,7 @@ export class Eventable<T> {
     return this
   }
 
-  once(name: string, fn: CarbyneListener<T>) {
+  once(name: string, fn: CarbyneListener<this>) {
     let self = this
     let cbk = function() {
       fn.apply(this, arguments)
@@ -60,7 +60,7 @@ export class Eventable<T> {
    * @param {[type]} event   [description]
    * @param {[type]} ...args [description]
    */
-  trigger(event: CarbyneEvent<T> | string, ...args: any[]) {
+  trigger(event: CarbyneEvent<this> | string, ...args: any[]) {
     if (!this._listeners) return
 
     let event_obj = this._mkEvent(event)

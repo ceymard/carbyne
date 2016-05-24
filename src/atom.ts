@@ -90,7 +90,7 @@ function _unmount(child: Element): Promise<any> {
 /**
  *
  */
-export class Atom extends Eventable<Atom> {
+export class Atom extends Eventable {
 
   public tag: string = ''
   public parent: Atom = null
@@ -113,7 +113,7 @@ export class Atom extends Eventable<Atom> {
   /**
    * Trigger an event on the curernt node and its parent, recursively.
    */
-  emit(event: CarbyneEvent<Atom>|string, ...args: any[]) {
+  emit(event: CarbyneEvent<this>|string, ...args: any[]) {
     event = this._mkEvent(event)
     const res = this.trigger(event, ...args)
     if (this.parent)
@@ -125,7 +125,7 @@ export class Atom extends Eventable<Atom> {
    * Trigger an event on the current node and all of its
    * children nodes, recursively.
    */
-  broadcast(event: CarbyneEvent<Atom>|string, ...args: any[]) {
+  broadcast(event: CarbyneEvent<this>|string, ...args: any[]) {
     event = this._mkEvent(event)
     const res = this.trigger(event, ...args)
 
