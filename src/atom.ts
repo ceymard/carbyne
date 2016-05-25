@@ -37,6 +37,8 @@ export type DecoratorFn = (a: Atom) => Atom
 export type Decorator = Controller | DecoratorFn
 export type DecoratorParam = Decorator | Decorator[]
 
+export type AtomStatus = 'uninitialized' | 'unmounted' | 'mounted' | 'destroyed'
+
 export interface BasicAttributes {
   id?: O<string>
   class?: O<string>
@@ -106,10 +108,9 @@ export class Atom extends Eventable {
   public attrs: {[name: string]: O<string>} = {}
   public element: HTMLElement = null
 
+  public status: AtomStatus = 'uninitialized'
   protected _initial_children: Appendable[]
   protected _fragment: Node = null
-  protected _mounted: boolean = false
-  protected _destroyed: boolean = false
   protected _controllers: Array<Controller> = []
 
   constructor(tag: string, attrs: BasicAttributes = {}, children: Appendable[] = []) {
@@ -214,7 +215,7 @@ export class Atom extends Eventable {
   mount(parent: Node, before: Node = null) {
 
     // Note : it is assumed that the Atom parent is set up at this point.
-    this._mounted = true
+    this.status = 'unmounted'
 
     // Create the element if it does not exist.
     if (!this.element) {
@@ -227,19 +228,21 @@ export class Atom extends Eventable {
 
       this.trigger('create')
 
-      // append the children since they're probably nowhere right now.
-      // var _children = this.children
-      // this.children = []
       for (let c of this._initial_children) this.append(c)
       this._initial_children = null
-      // Mount it to its parent.
     }
 
     this.trigger('mount:before')
     parent.insertBefore(this.element, before)
-    // FIXME this is plain erroneous ; at this point, we have only
-    // added the element on a documentFragment for all we know, which
-    // means this.element *can't* access parentNode !
+
+    if (parent instanceof HTMLElement)
+      this.setMounted()
+  }
+
+  protected setMounted() {
+    this.status = 'mounted'
+    for (let c of this.atomChildren().filter(a => a.status !== 'mounted'))
+      c.setMounted()
     this.trigger('mount')
   }
 
@@ -263,7 +266,8 @@ export class Atom extends Eventable {
 
     var elt: Element = _getAtom(child, this)
 
-    if (this._mounted) {
+    var status = this.status
+    if (status === 'mounted' || status === 'unmounted') {
       this.children.push(elt)
       // We'll try to mount the child to ourself.
 
@@ -279,9 +283,13 @@ export class Atom extends Eventable {
       if (initiated) {
         this._addFragment()
         this._fragment = null
+        for (let c of this.atomChildren().filter(a => a.status !== 'mounted'))
+          c.setMounted()
       }
-    } else {
+    } else if (status === 'uninitialized') {
       this._initial_children.push(elt)
+    } else {
+      throw new Error('cannot append to a destroyed Atom')
     }
 
     return elt
@@ -325,9 +333,9 @@ export class Atom extends Eventable {
   unmount(): Promise<any> {
     // Ignore unmounted nodes, as unmount could be called by destroy() while not
     // mounted.
-    if (!this._mounted) return Promise.resolve(false)
+    if (this.status !== 'mounted') return Promise.resolve(false)
 
-    this._mounted = false
+    this.status = 'unmounted'
 
     if (this.parent) this.parent.removeChild(this)
     var before = this.broadcast('unmount:before')
@@ -350,7 +358,7 @@ export class Atom extends Eventable {
 
       this.children = null
       this.attrs = null
-      this._destroyed = true
+      this.status = 'destroyed'
       this._listeners = {}
       // super.destroy()
     })
@@ -360,7 +368,7 @@ export class Atom extends Eventable {
    * Detaches all children or removes them.
    */
   empty() : Promise<any> {
-    if (!this._mounted) return Promise.resolve(true)
+    if (this.status !== 'mounted') return Promise.resolve(true)
 
     var prom = this.children.slice(0).map(c => c instanceof Atom ?
       c.destroy()
@@ -392,7 +400,7 @@ export class VirtualAtom extends Atom {
 
   mount(parent: Node, before: Node = null) {
 
-    this._mounted = true
+    this.status = 'unmounted'
 
     if (!this._begin) {
       this.trigger('create:before')
@@ -404,10 +412,12 @@ export class VirtualAtom extends Atom {
     this.trigger('mount:before')
     parent.insertBefore(this._begin, before)
     parent.insertBefore(this._end, before)
-    this.trigger('mount')
 
     for (let c of this._initial_children) this.append(c)
     this._initial_children = null
+
+    if (parent instanceof HTMLElement)
+      this.setMounted()
   }
 
   _unmountFromDOM() {
