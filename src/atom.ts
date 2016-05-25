@@ -243,6 +243,12 @@ export class Atom extends Eventable {
     this.trigger('mount')
   }
 
+  /**
+   * Append an appendable to the Atom.
+   * @param  {Appendable} child The child to append
+   * @return {Element}    The result of the transformation of the child
+   *                          to a Node if it needed to be.
+   */
   append(child: Appendable): Element {
     // FIXME this ugly hack is due to the fact that I can't seem to
     // cast child as an AppendableBuilder. Is this a typescript bug ?
@@ -373,15 +379,12 @@ export class Atom extends Eventable {
  */
 export class VirtualAtom extends Atom {
 
-  public name: string
-
   protected _begin: Comment
   protected _end: Comment
 
   constructor(tag: string, attrs?: {}, children: Appendable[] = []) {
     super(tag)
 
-    this.name = 'virtual'
     this._begin = null
     this._end = null
     this._initial_children = children
@@ -393,7 +396,7 @@ export class VirtualAtom extends Atom {
 
     if (!this._begin) {
       this.trigger('create:before')
-      this._begin = document.createComment(`[ ${this.name}`)
+      this._begin = document.createComment(`[ ${this.tag}`)
       this._end = document.createComment(`]`)
       this.trigger('create')
     }
