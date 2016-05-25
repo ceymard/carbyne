@@ -256,9 +256,9 @@ export class Atom extends Eventable {
     }
 
     var elt: Element = _getAtom(child, this)
-    this.children.push(elt)
 
     if (this._mounted) {
+      this.children.push(elt)
       // We'll try to mount the child to ourself.
 
       var initiated = false
@@ -274,6 +274,8 @@ export class Atom extends Eventable {
         this._addFragment()
         this._fragment = null
       }
+    } else {
+      this._initial_children.push(elt)
     }
 
     return elt
@@ -376,12 +378,13 @@ export class VirtualAtom extends Atom {
   protected _begin: Comment
   protected _end: Comment
 
-  constructor(tag: string) {
+  constructor(tag: string, attrs?: {}, children: Appendable[] = []) {
     super(tag)
 
     this.name = 'virtual'
     this._begin = null
     this._end = null
+    this._initial_children = children
   }
 
   mount(parent: Node, before: Node = null) {
@@ -400,10 +403,8 @@ export class VirtualAtom extends Atom {
     parent.insertBefore(this._end, before)
     this.trigger('mount')
 
-    var _children = this.children
-    this.children = []
-    this.append(_children)
-
+    for (let c of this._initial_children) this.append(c)
+    this._initial_children = null
   }
 
   _unmountFromDOM() {
