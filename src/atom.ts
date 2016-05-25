@@ -27,14 +27,22 @@ import {Eventable, CarbyneListener, CarbyneEvent} from './eventable'
 
 export type Element = Atom | Node
 
-export type AppendableElement = string | number | boolean | Atom | Node | JSX.Element
+export type AppendableElement = string | number | boolean | Atom | Node
 export type AppendableBuilder = (...a: any[]) => AppendableElement
 export type AppendableSingle = AppendableElement | AppendableBuilder
-export type Appendable = AppendableElement | Array<AppendableElement>
+export type AppendableMult = AppendableSingle | AppendableSingle[]
+export type Appendable = AppendableMult | AppendableMult[]
+
+export type DecoratorFn = (a: Atom) => Atom
+export type Decorator = Controller | DecoratorFn
+export type DecoratorParam = Decorator | Decorator[]
 
 export interface BasicAttributes {
+  id?: O<string>
+  class?: O<string>
+  style?: O<string>
   [name: string]: any
-  $$?: any
+  $$?: DecoratorParam
 }
 
 export function isAtom(a: any): a is Atom {
@@ -94,20 +102,21 @@ export class Atom extends Eventable {
 
   public tag: string = ''
   public parent: Atom = null
-  public children: Array<Element> = []
+  public children: Element[] = []
   public attrs: {[name: string]: O<string>} = {}
   public element: HTMLElement = null
 
+  protected _initial_children: Appendable[]
   protected _fragment: Node = null
   protected _mounted: boolean = false
   protected _destroyed: boolean = false
   protected _controllers: Array<Controller> = []
 
-  constructor(tag: string, attrs: BasicAttributes = {}, children: Element[] = []) {
+  constructor(tag: string, attrs: BasicAttributes = {}, children: Appendable[] = []) {
     super()
     this.tag = tag
     this.attrs = attrs
-    this.children = children
+    this._initial_children = children
   }
 
   /**
@@ -219,9 +228,10 @@ export class Atom extends Eventable {
       this.trigger('create')
 
       // append the children since they're probably nowhere right now.
-      var _children = this.children
-      this.children = []
-      this.append(_children)
+      // var _children = this.children
+      // this.children = []
+      for (let c of this._initial_children) this.append(c)
+      this._initial_children = null
       // Mount it to its parent.
     }
 

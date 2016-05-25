@@ -159,10 +159,10 @@ export function click(cbk: (ev: Event, atom: Atom) => any) {
 
 
 export type ClassDefinition = O<string> | {
-  [name: string]: O<boolean>
+  [name: string]: O<any>
 }
 
-function isClassDefObj(a: any): a is {[name: string]: O<boolean>} {
+function isClassDefObj(a: any): a is {[name: string]: O<any>} {
   return typeof a === 'object' && !(a instanceof Observable)
 }
 

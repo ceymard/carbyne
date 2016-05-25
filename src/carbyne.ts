@@ -12,7 +12,7 @@ export {If, Then, Else, Match, Case} from './control'
 
 import {cls} from './decorators'
 import {Controller} from './controller'
-import {Atom, BasicAttributes, Appendable, AppendableBuilder} from './atom'
+import {Atom, BasicAttributes, Appendable, AppendableBuilder, DecoratorFn, Decorator} from './atom'
 import {o, Observable, O} from './observable'
 
 var _re_elt_name = /^[^\.#]*/
@@ -22,8 +22,8 @@ export type FnBuilder = (a: BasicAttributes, children: Array<any>) => Atom
 export type Builder = string | FnBuilder
 
 export interface C {
-  (elt: Builder, attrs?: any, children?: any[]): Atom
-  createElement: (elt: Builder, attrs?: any, children?: any[]) => Atom
+  (elt: Builder, attrs?: BasicAttributes, ...children: Appendable[]): Atom
+  createElement: (elt: Builder, attrs?: BasicAttributes, ...children: Appendable[]) => Atom
 }
 
 /**
@@ -37,22 +37,25 @@ export interface C {
  * @param  {Object} attrs The attributes that should go onto the final Atom.
  * @return {Atom} The instanciated Atom.
  */
-export var c: C = function c(elt: Builder, attrs: any = {}, children: Array<any> = []) : Atom {
+export var c: C = function c(elt: Builder, attrs: BasicAttributes = {}, ...children: Appendable[]) : Atom {
   var atom: Atom = null
 
   var special_attrs: string[] = ['id', 'tabindex']
   var i = 0
-  var children = []
-  for (i = 2; i < arguments.length; i++)
-    children.push(arguments[i])
+  // var children = []
+  // for (i = 2; i < arguments.length; i++)
+  //   children.push(arguments[i])
 
   attrs = attrs || {}
 
-  let decorators = attrs.$$
+  let decorators: Decorator[] = null
+  let $$ = attrs.$$
 
-  if (decorators) {
+  if ($$) {
     delete attrs.$$
-    if (!Array.isArray(decorators)) decorators = [decorators]
+    // FIXME couldn't find a way of correctly de-typing decorators
+    if (!Array.isArray($$)) decorators = [$$ as any]
+    else decorators = $$ as any
   }
 
   if (typeof elt === 'string') {
@@ -107,9 +110,9 @@ export var c: C = function c(elt: Builder, attrs: any = {}, children: Array<any>
   if (decorators) {
     for (i = 0; i < decorators.length; i++) {
       if (decorators[i] instanceof Controller) {
-        atom.addController(decorators[i])
+        atom.addController(decorators[i] as Controller)
       } else {
-        decorated = decorators[i](atom)
+        decorated = (decorators[i] as DecoratorFn)(atom)
         atom = decorated instanceof Atom ? decorated : atom
       }
     }
@@ -123,4 +126,17 @@ c.createElement = c
 
 export function Fragment(attrs: any, children: any[]) {
   return children
+}
+
+
+declare global {
+  namespace JSX {
+    export type Element = Atom
+    export interface ElementClass {
+      (attrs: BasicAttributes, children: Appendable): Atom
+    }
+    export interface IntrinsicElements {
+      [name: string]: any
+    }
+  }
 }
