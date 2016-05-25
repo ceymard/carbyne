@@ -112,7 +112,7 @@ export class BindController extends Controller {
 
 export function bind(obs: Observable<string>, opts: BindControllerOptions = {}) {
 
-  if (!obs) return
+  if (!obs) return function (atom: Atom): Atom { return atom }
 
   return function bindDecorator(atom: Atom): Atom {
     let ctrl = new BindController(obs, opts)

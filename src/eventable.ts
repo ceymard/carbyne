@@ -61,7 +61,7 @@ export class Eventable {
    * @param {[type]} ...args [description]
    */
   trigger(event: CarbyneEvent<this> | string, ...args: any[]) {
-    if (!this._listeners) return
+    if (!this._listeners) return []
 
     let event_obj = this._mkEvent(event)
     var result: any[] = [] // FIXME
