@@ -80,16 +80,21 @@ export var c: C = function c(elt: Builder, attrs: BasicAttributes = {}, ...child
 
   } else if (typeof elt === 'function') {
     // If it is a function, then the element is composite.
-    atom = elt(attrs, children)
-    // atom.builder = elt
 
-    if (attrs.class) {
-      cls(attrs.class)(atom)
+    var _class = attrs.class
+    var _style = attrs.style
+    delete attrs.class
+    delete attrs.style
+
+    atom = elt(attrs, children)
+
+    if (_class) {
+      cls(_class)(atom)
     }
 
     // Forward the style attriute.
     // XXX may need a style decorator.
-    if (attrs.style) {
+    if (_style) {
       if (atom.attrs['style'])
         atom.attrs['style'] = o(attrs.style, atom.attrs['style'], (c1: string, c2: string) => `${c1};${c2}`)
       else atom.attrs['style'] = attrs.style
