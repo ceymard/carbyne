@@ -73,9 +73,12 @@ export var c: C = function c(elt: Builder, attrs: BasicAttributes = {}, ...child
     })
 
     str_elt = _re_elt_name.exec(str_elt)[0] || 'div'
+    var _cls = attrs.class
+    delete attrs.class
 
     // If we have a string, then it is a simple html element.
     atom = new Atom(str_elt, attrs, children)
+    if (_cls) cls(_cls)(atom)
     if (classes.length) cls(...classes)(atom)
 
   } else if (typeof elt === 'function') {
