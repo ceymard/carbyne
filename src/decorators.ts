@@ -226,7 +226,12 @@ export function cls(...args: ClassDefinition[]) {
     }
 
     for (let def of args) {
-      cc.add(def)
+      if (Array.isArray(def)) {
+        let ad: any = def
+        for (let d of ad) cc.add(d)
+      } else {
+        cc.add(def)
+      }
     }
 
     return atom
