@@ -162,7 +162,7 @@ export class Atom extends Eventable {
   /**
    * Wrapper to listen to events from an HtmlElement
    */
-  listen(event: string, cbk: EventListener) {
+  listen(event: string, cbk: EventListener): Atom {
     if (!this.element)
       this.on('create', () => this.listen(event, cbk))
     else {

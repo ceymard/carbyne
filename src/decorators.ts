@@ -144,6 +144,13 @@ export function once(name: string, cbk: CarbyneListener<Atom>) {
 }
 
 
+export function listen(name: string, cbk: EventListener) {
+  return function(atom: Atom): Atom {
+    return atom.listen(name, cbk)
+  }
+}
+
+
 export function click(cbk: (ev: Event, atom: Atom) => any) {
 
   return function clickDecorator(atom: Atom): Atom {
