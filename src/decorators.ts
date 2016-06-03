@@ -200,7 +200,7 @@ export class ClassController extends Controller {
         if (old !== name && old != null)
           list.remove(...old.split(/\s+/))
         old = name
-        list.add(...name.split(/\s+/))
+        if (name) list.add(...name.split(/\s+/))
       })
 
     } else if (isClassDefObj(def)) {
@@ -208,9 +208,9 @@ export class ClassController extends Controller {
       for (let name in def) {
         this.atom.observe(def[name], value => {
           if (value) {
-            list.add(...name.split(/\s+/))
+            if (name) list.add(...name.split(/\s+/))
           } else {
-            list.remove(...name.split(/\s+/))
+            if (name) list.remove(...name.split(/\s+/))
           }
         })
       }
