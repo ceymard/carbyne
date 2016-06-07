@@ -242,9 +242,9 @@ export class ArrayObservable<T> extends Observable<Array<T>> {
     return res
   }
 
-  sort() {
+  sort(fn: (a: T, b: T) => number) {
     // FIXME sort function type
-    let res = this._value.sort()
+    let res = this._value.sort(fn)
     this._change(null)
     return res
   }
