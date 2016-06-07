@@ -15,24 +15,24 @@ export type RepeaterFn<T> = (o: Observable<T>, idx?: number) => Atom
  */
 export class RepeaterAtom<T> extends VirtualAtom {
 
-	_current_length: number
-	_obs: Observable<T[]>
-	_fn: RepeaterFn<T>
+	private current: Atom[]
+	private obs: Observable<T[]>
+	private fn: RepeaterFn<T>
 
 	constructor(obs: Observable<T[]>, fn: RepeaterFn<T>) {
 		super('repeater') // Virtual Atom
-		this._current_length = 0
-		this._obs = obs
-		this._fn = fn
+		this.current = []
+		this.obs = obs
+		this.fn = fn
 	}
 
 	mount(parent: Node, before: Node = null) {
 		super.mount(parent, before) // mount it normally
 
 		// and then create the observing logic
-		this.observe(this._obs.p('length'), (len) => {
+		this.observe(this.obs.p<number>('length'), (len) => {
 			// only update whenever length changes.
-			this._update(this._obs.get())
+			this._update(len)
 		})
 	}
 
@@ -41,27 +41,27 @@ export class RepeaterAtom<T> extends VirtualAtom {
 	 * added or removed if the new array's length is different from
 	 * what we are tracking.
 	 */
-	_update(arr: T[]) {
-		var fn = this._fn
+	_update(len: number) {
+		var fn = this.fn
 
-		if (arr == null || arr.length == 0) {
+		if (!len) {
+			this.current = []
 			return this.empty()
 		}
 
-		if (arr.length < this._current_length) {
-			// remove the elements we don't need anymore
+		if (len < this.current.length) {
 
-			this.atomChildren()
-				.slice(arr.length)
-				.map(atom => atom.destroy())
+			this.current.slice(len).map(atom => atom.destroy())
+			this.current = this.current.slice(0, len)
 
-		} else if (arr.length > this._current_length) {
-			for (var i = this._current_length; i < arr.length; i++) {
-				this.append(fn(this._obs.prop<T>(i.toString()), i))
+		} else if (len > this.current.length) {
+			for (var i = this.current.length; i < len; i++) {
+				let atom = fn(this.obs.prop<T>(i.toString()), i)
+				this.append(atom)
+				this.current.push(atom)
 			}
 		}
 
-		this._current_length = arr.length
 		return null
 	}
 
