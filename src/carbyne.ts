@@ -1,4 +1,4 @@
-export {bind, click, cls, on, once, listen} from './decorators'
+export {bind, click, cls, on, once, listen, observe} from './decorators'
 export {Controller} from './controller'
 export {o, Observable, O, ArrayObservable, Observer} from './observable'
 export {Atom, ObservableAtom, VirtualAtom, BasicAttributes, Appendable} from './atom'

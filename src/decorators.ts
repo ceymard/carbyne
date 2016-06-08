@@ -1,6 +1,6 @@
 
 import {Controller} from './controller'
-import {Observable, O} from './observable'
+import {Observable, O, Observer} from './observable'
 import {Atom} from './atom'
 import {CarbyneEvent, CarbyneListener} from './eventable'
 
@@ -51,18 +51,16 @@ export class BindController extends Controller {
     let value_set_from_event = false
 
     let fromObservable = (val: string) => {
-      if (value_set_from_event) {
-        // Do not update the input if the event just updated
-        value_set_from_event = false
+      if (value_set_from_event)
         return
-      }
       element.value = val
     }
 
     let fromEvent = (evt: Event) => {
       let val = element.value
-      if (obs.set(val))
-        value_set_from_event = true
+      value_set_from_event = true
+      obs.set(val)
+      value_set_from_event = false
     }
 
     let type = element.type.toLowerCase() || 'text'
@@ -147,6 +145,13 @@ export function once(name: string, cbk: CarbyneListener<Atom>) {
 export function listen(name: string, cbk: EventListener) {
   return function(atom: Atom): Atom {
     return atom.listen(name, cbk)
+  }
+}
+
+
+export function observe<T>(obs: Observable<T>, fn: Observer<T>) {
+  return function(atom: Atom): Atom {
+    return atom.observe(obs, fn)
   }
 }
 
