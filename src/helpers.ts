@@ -107,16 +107,37 @@ export function merge(dst: any, src: any): any {
   return dst
 }
 
-export function debounce(fn : Function, ms : number) : Function {
+
+/**
+ * A debounce decorator for your methods.
+ */
+export function debounce(ms: number) {
   let last_call = new Date
   let cancel_id: number = null
   let self = this
 
-  return function debouncedWrapper(...args: any[]) {
-    if (cancel_id) {
-      clearTimeout(cancel_id)
-      cancel_id = null
+  return function debounceDecorator(target: any, key: string, descriptor: PropertyDescriptor): void {
+    let cancel_id: number = null
+    let orig = descriptor.value
+
+    function wrapped(...args: any[]) {
+      if (cancel_id) {
+        clearTimeout(cancel_id)
+        cancel_id = null
+      }
+
+      cancel_id = setTimeout(() => {
+        (orig as any).apply(this, ...args)
+      }, ms)
     }
-    cancel_id = setTimeout(() => fn.apply(self, args), ms)
+
+    descriptor.value = wrapped
   }
+}
+
+/**
+ * A throttle decorator for methods
+ */
+export function throttle(ms: number) {
+
 }
