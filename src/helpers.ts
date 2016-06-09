@@ -112,9 +112,6 @@ export function merge(dst: any, src: any): any {
  * A debounce decorator for your methods.
  */
 export function debounce(ms: number) {
-  let last_call = new Date
-  let cancel_id: number = null
-  let self = this
 
   return function debounceDecorator(target: any, key: string, descriptor: PropertyDescriptor): void {
     let cancel_id: number = null
@@ -127,7 +124,8 @@ export function debounce(ms: number) {
       }
 
       cancel_id = setTimeout(() => {
-        (orig as any).apply(this, ...args)
+        (orig as any).apply(this, args)
+        cancel_id = null
       }, ms)
     }
 
@@ -140,4 +138,31 @@ export function debounce(ms: number) {
  */
 export function throttle(ms: number) {
 
+  return function throttleDecorator(target: any, key: string, descriptor: PropertyDescriptor): void {
+    let last_call: number = 0
+    let cancel_id: number = null
+    let orig = descriptor.value
+
+    function wrapped(...args: any[]) {
+      let prev = last_call
+      let now = Date.now()
+      last_call = now
+
+      if (now - prev > ms)
+        return
+
+      if (cancel_id) {
+        clearTimeout(cancel_id)
+        cancel_id = null
+      }
+
+      cancel_id = setTimeout(() => {
+        (orig as any).apply(this, args)
+        // clear the timer
+        cancel_id = null
+      }, ms)
+    }
+
+    descriptor.value = wrapped
+  }
 }
