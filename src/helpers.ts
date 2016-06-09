@@ -148,19 +148,16 @@ export function throttle(ms: number) {
       let now = Date.now()
       last_call = now
 
-      if (now - prev > ms)
+      if (now - prev < ms) {
+        if (!cancel_id)
+          cancel_id = setTimeout(() => {
+            (orig as any).apply(this, args)
+            cancel_id = null
+          }, ms - (now - prev))
         return
-
-      if (cancel_id) {
-        clearTimeout(cancel_id)
-        cancel_id = null
       }
 
-      cancel_id = setTimeout(() => {
-        (orig as any).apply(this, args)
-        // clear the timer
-        cancel_id = null
-      }, ms)
+      (orig as any).apply(this, args)
     }
 
     descriptor.value = wrapped
