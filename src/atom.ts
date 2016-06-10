@@ -461,7 +461,10 @@ export class ObservableAtom<T extends Appendable> extends VirtualAtom {
     super.mount(parent, before)
 
     this.observe(this.obs, value => {
-      if (value === undefined) return;
+      if (value === undefined) {
+        this.empty()
+        return
+      }
 
       let is_text = !(
         value instanceof Atom ||
