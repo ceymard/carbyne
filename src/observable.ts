@@ -129,23 +129,23 @@ export class Observable<T> {
    */
 
   gt(value: any): Observable<boolean> {
-    return this.tf<boolean>({ get: val => val > value })
+    return o(this, value, (v1: any, v2: any) => v1 > v2)
   }
 
   lt(value: any): Observable<boolean> {
-    return this.tf({ get: val => val < value })
+    return o(this, value, (v1: any, v2: any) => v1 < v2)
   }
 
   eq(value: any): Observable<boolean> {
-    return this.tf({ get: val => val === value })
+    return o(this, value, (v1: any, v2: any) => v1 === v2)
   }
 
   gte(value: any): Observable<boolean> {
-    return this.tf({ get: val => val >= value })
+    return o(this, value, (v1: any, v2: any) => v1 >= v2)
   }
 
   lte(value: any): Observable<boolean> {
-    return this.tf({get: val => val <= value})
+    return o(this, value, (v1: any, v2: any) => v1 <= v2)
   }
 
   isNull(): Observable<boolean> {
@@ -310,6 +310,14 @@ export class PropObservable<T, U> extends Observable<U> {
 
   setp<V>(prop: string, value: V): boolean {
     return this._obs.setp<V>(pathjoin(this._prop, prop), value)
+  }
+
+  /**
+   * Change the property being watched
+   */
+  changeProp(prop: string) {
+    this._prop = "" + prop
+    if (this._unregister) this._refresh()
   }
 
   _refresh(ancestry?: number, prop: string = '') {
