@@ -528,7 +528,14 @@ export class DependentObservable<T> extends Observable<T> {
  * 		just return the result of the computation. Otherwise return an observable
  * 		that depends on other observables.
  */
-export function o(...args : Array<any>) {
+export function o<A>(a: O<A>): Observable<A>
+export function o<A, B>(a1: O<A>, cbk: (a: A) => B): DependentObservable<B>
+export function o<A, B, C>(a1: O<A>, a2: O<B>, cbk: (a1: A, a2: B) => C): DependentObservable<C>
+export function o<A, B, C, D>(a1: O<A>, a2: O<B>, a3: O<C>, cbk: (a1: A, a2: B, a3: C) => D): DependentObservable<D>
+export function o<A, B, C, D, E>(a1: O<A>, a2: O<B>, a3: O<C>, a4: O<D>, cbk: (a1: A, a2: B, a3: C, a4: D) => E): DependentObservable<E>
+export function o<A, B, C, D, E, F>(a1: O<A>, a2: O<B>, a3: O<C>, a4: O<D>, a5: O<E>, cbk: (a1: A, a2: B, a3: C, a4: D, a5: E) => F): DependentObservable<F>
+export function o<A, B, C, D, E, F, G>(a1: O<A>, a2: O<B>, a3: O<C>, a4: O<D>, a5: O<E>, a6: O<F>, cbk: (a1: A, a2: B, a3: C, a4: D, a5: E, a6: F) => G): DependentObservable<G>
+export function o(...args : any[]) {
   let l = args.length
 
   // Just creating an observable.
