@@ -156,9 +156,53 @@ export function observe<T>(obs: Observable<T>, fn: Observer<T>) {
 }
 
 
+let on_mobile = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+export var THRESHOLD = 300 // 10 milliseconds
+export var DISTANCE_THRESHOLD = 10
+
+/**
+ * Add a callback on the click event, or touchend if we are on a mobile
+ * device.
+ */
 export function click(cbk: (ev: Event, atom: Atom) => any) {
 
-  return function clickDecorator(atom: Atom): Atom {
+  return on_mobile ? clickTapDecorator : clickDecorator;
+
+  function clickTapDecorator(atom: Atom): Atom {
+
+    let last_ev: MouseEvent = null
+    let last_call: number = 0
+
+    atom.on('create', function (event: CarbyneEvent<Atom>) {
+
+      event.target.listen('touchstart', (ev: MouseEvent) => {
+        last_ev = ev
+        last_call = Date.now()
+      })
+
+      event.target.listen('touchend', (ev: MouseEvent) => {
+        let now = Date.now()
+        let dx = ev.pageX - last_ev.pageX
+        let dy = ev.pageY - last_ev.pageY
+
+        if (last_ev.target !== ev.target
+          || now - last_call > THRESHOLD
+          || (dx * dx + dy * dy) > DISTANCE_THRESHOLD * DISTANCE_THRESHOLD
+        ) {
+          // do nothing if the target is not the same
+        } else {
+          // If we got here, we can safely call the callback.
+          cbk(ev, atom)
+        }
+
+        last_ev = null
+      })
+    })
+
+    return atom
+  }
+
+  function clickDecorator(atom: Atom): Atom {
 
     atom.on('create', function (event: CarbyneEvent<Atom>) {
       event.target.listen('click', (ev: Event) => cbk(ev, atom))
