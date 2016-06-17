@@ -81,22 +81,6 @@ function _getAtom(child: any, parent: Atom = null) : Element {
 }
 
 
-function _mount(child: Element, parent: Node, before: Node = null): void {
-  if (child instanceof Atom)
-    child.mount(parent, before)
-  else
-    parent.insertBefore(child, before)
-}
-
-
-function _unmount(child: Element): Promise<any> {
-  if (isAtom(child))
-    return child.unmount()
-  if (isNode(child))
-    child.parentNode.removeChild(child)
-  return Promise.resolve(true)
-}
-
 /**
  *
  */
@@ -278,7 +262,10 @@ export class Atom extends Eventable {
         this._fragment = document.createDocumentFragment()
       }
 
-      _mount(elt, this._fragment)
+      if (elt instanceof Atom)
+        elt.mount(this._fragment, null)
+      else
+        this._fragment.insertBefore(elt, null)
 
       if (initiated) {
         this._addFragment()
@@ -480,10 +467,15 @@ export class ObservableAtom<T extends Appendable> extends VirtualAtom {
 
       if (had_next_value) return
 
-      this.empty().then(() => {
-        if (this.children) this.append(this.next_value)
-        this.next_value = null
-      })
+      // if (this.children && this.children.length > 0) {
+        this.empty().then(() => {
+          if (this.children) this.append(this.next_value)
+          this.next_value = null
+        })
+      // } else {
+      //   this.append(this.next_value)
+      //   this.next_value = null
+      // }
 
     })
   }
