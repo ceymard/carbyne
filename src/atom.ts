@@ -1,5 +1,5 @@
 
-import {identity, forceString} from './helpers'
+import {identity, forceString, resolve, waitall} from './helpers'
 import {Observable, o, O, Observer} from './observable'
 import {Controller} from './controller'
 import {Eventable, CarbyneListener, CarbyneEvent} from './eventable'
@@ -320,22 +320,20 @@ export class Atom extends Eventable {
   unmount(): Promise<any> {
     // Ignore unmounted nodes, as unmount could be called by destroy() while not
     // mounted.
-    if (this.status !== 'mounted') return Promise.resolve(false)
+    if (this.status !== 'mounted') return resolve(false)
 
     this.status = 'unmounted'
 
     if (this.parent) this.parent.removeChild(this)
     var before = this.broadcast('unmount:before')
-    return Promise.all(before || [])
+    return waitall(before)
       .then(e => this._unmountFromDOM())
-      .then(e => {
-        return this.trigger('unmount')
-      })
+      .then(e => this.trigger('unmount'))
   }
 
   destroy() {
     return this.unmount()
-    .then(res => Promise.all(this.broadcast('destroy:before') || [])).then(all => {
+    .then(res => waitall(this.broadcast('destroy:before'))).then(all => {
       var i = 0, ctrls = this._controllers
 
       this.broadcast('destroy')
@@ -355,13 +353,14 @@ export class Atom extends Eventable {
    * Detaches all children or removes them.
    */
   empty() : Promise<any> {
-    if (this.status !== 'mounted') return Promise.resolve(true)
+    if (this.status !== 'mounted') return resolve(true)
 
     var prom = this.children.slice(0).map(c => c instanceof Atom ?
       c.destroy()
-      : Promise.resolve(c.parentNode.removeChild(c))
+      : resolve(c.parentNode.removeChild(c))
     )
-    return Promise.all<any>(prom).then(all => {
+
+    return waitall(prom).then(all => {
       this.children = []
     })
   }
@@ -411,7 +410,7 @@ export class VirtualAtom extends Atom {
     this._begin.parentNode.removeChild(this._begin)
     this._end.parentNode.removeChild(this._end)
     var _children = this.children.slice()
-    return Promise.all(_children.map(c => c instanceof Atom ? c.unmount() : c.parentNode.removeChild(c)))
+    return waitall(_children.map(c => c instanceof Atom ? c.unmount() : c.parentNode.removeChild(c)))
       .then(a => this.children = _children) // keep the children.
   }
 
@@ -467,15 +466,10 @@ export class ObservableAtom<T extends Appendable> extends VirtualAtom {
 
       if (had_next_value) return
 
-      // if (this.children && this.children.length > 0) {
-        this.empty().then(() => {
-          if (this.children) this.append(this.next_value)
-          this.next_value = null
-        })
-      // } else {
-      //   this.append(this.next_value)
-      //   this.next_value = null
-      // }
+      this.empty().then(() => {
+        if (this.children) this.append(this.next_value)
+        this.next_value = null
+      })
 
     })
   }

@@ -163,3 +163,46 @@ export function throttle(ms: number) {
     descriptor.value = wrapped
   }
 }
+
+
+function isThenable<T>(obj: any) : obj is Thenable<T> {
+  return obj && obj.then
+}
+
+/**
+ * A helper that calls a thenable instantly instead of waiting for the next tick.
+ */
+export function resolve<T>(value: T): Thenable<T> {
+  return {
+    __value__: value,
+    then<U>(onFulfilled: (a: T) => U | Thenable<U>, onRejected?: (error: any) => U | Thenable<U>): Thenable<U> {
+      let res = onFulfilled(value)
+      if (isThenable<U>(res)) {
+        return res
+      }
+      return resolve(res)
+    },
+
+    catch<U>(onRejected?: (error: any) => U | Thenable<U>): Thenable<U> {
+      return null
+      // return reject(onRejected(error))
+    }
+  } as Thenable<T>
+}
+
+
+/**
+ * An internal method that avoids launching new promises
+ */
+export function waitall(proms: any[]): Thenable<any> {
+  let has_promise = false
+
+  for (let p of proms) {
+    if (p && !p.__value__ && isThenable(p)) {
+      has_promise = true
+      break
+    }
+  }
+
+  return has_promise ? Promise.all(proms) : resolve(null)
+}

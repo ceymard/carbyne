@@ -68,7 +68,8 @@ export class Eventable {
     var listeners = this._listeners[event_obj.type] || []
 
     for (let ls of listeners) {
-      result.push(ls(event_obj, ...args))
+      let res = ls(event_obj, ...args)
+      if (res) result.push(res)
     }
 
     return result
