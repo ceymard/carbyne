@@ -475,3 +475,8 @@ export class ObservableAtom<T extends Appendable> extends VirtualAtom {
   }
 
 }
+
+
+export function Observe<T extends Appendable>(obs: Observable<T>): ObservableAtom<T> {
+  return new ObservableAtom(obs)
+}
