@@ -15,7 +15,7 @@ export class Controller {
     return this.atom.observe(o, fn)
   }
 
-  getController(cnt: new () => Controller) {
+  getController(cnt: new (...a: any[]) => Controller) {
     return this.atom.getController(cnt)
   }
 
