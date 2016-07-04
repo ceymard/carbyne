@@ -30,7 +30,7 @@ export class Eventable {
     return event as CarbyneEvent<this>
   }
 
-  on(name: string, fn: CarbyneListener<this>) {
+  on(name: string, fn: CarbyneListener<this>): this {
     if (!this._listeners) this._listeners = {}
     if (!(name in this._listeners)) this._listeners[name] = []
     this._listeners[name].push(fn)
