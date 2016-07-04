@@ -177,12 +177,12 @@ export class Observable<T> {
   // ?
 
   or(...args : Array<Observable<any>>) : Observable<boolean> {
-    return Or(...[this, ...args])
+    return o.or(...[this, ...args])
   }
 
   and(...args: Array<Observable<boolean>>) : Observable<boolean> {
 
-    return And(...[this, ...args])
+    return o.and(...[this, ...args])
   }
 
   // Some basic modification functions
@@ -466,7 +466,7 @@ export class DependentObservable<T> extends Observable<T> {
   _refresh() {
     if (this._ignore_updates) return
     const old_val = this._value
-    const resolved = this._resolved || this._deps.map(dep => Get(dep))
+    const resolved = this._resolved || this._deps.map(dep => o.get(dep))
     const new_val = this._value = this._fn(...resolved)
     const obs = this._observers
     var i = 0
@@ -528,14 +528,33 @@ export class DependentObservable<T> extends Observable<T> {
  * 		just return the result of the computation. Otherwise return an observable
  * 		that depends on other observables.
  */
-export function o<A>(a: O<A>): Observable<A>
-export function o<A, B>(a1: O<A>, cbk: (a: A) => B): DependentObservable<B>
-export function o<A, B, C>(a1: O<A>, a2: O<B>, cbk: (a1: A, a2: B) => C): DependentObservable<C>
-export function o<A, B, C, D>(a1: O<A>, a2: O<B>, a3: O<C>, cbk: (a1: A, a2: B, a3: C) => D): DependentObservable<D>
-export function o<A, B, C, D, E>(a1: O<A>, a2: O<B>, a3: O<C>, a4: O<D>, cbk: (a1: A, a2: B, a3: C, a4: D) => E): DependentObservable<E>
-export function o<A, B, C, D, E, F>(a1: O<A>, a2: O<B>, a3: O<C>, a4: O<D>, a5: O<E>, cbk: (a1: A, a2: B, a3: C, a4: D, a5: E) => F): DependentObservable<F>
-export function o<A, B, C, D, E, F, G>(a1: O<A>, a2: O<B>, a3: O<C>, a4: O<D>, a5: O<E>, a6: O<F>, cbk: (a1: A, a2: B, a3: C, a4: D, a5: E, a6: F) => G): DependentObservable<G>
-export function o(...args : any[]) {
+export type ObsFn = {
+  <A>(a: O<A>): Observable<A>
+  <A, B>(a1: O<A>, cbk: (a: A) => B): DependentObservable<B>
+  <A, B, C>(a1: O<A>, a2: O<B>, cbk: (a1: A, a2: B) => C): DependentObservable<C>
+  <A, B, C, D>(a1: O<A>, a2: O<B>, a3: O<C>, cbk: (a1: A, a2: B, a3: C) => D): DependentObservable<D>
+  <A, B, C, D, E>(a1: O<A>, a2: O<B>, a3: O<C>, a4: O<D>, cbk: (a1: A, a2: B, a3: C, a4: D) => E): DependentObservable<E>
+  <A, B, C, D, E, F>(a1: O<A>, a2: O<B>, a3: O<C>, a4: O<D>, a5: O<E>, cbk: (a1: A, a2: B, a3: C, a4: D, a5: E) => F): DependentObservable<F>
+  <A, B, C, D, E, F, G>(a1: O<A>, a2: O<B>, a3: O<C>, a4: O<D>, a5: O<E>, a6: O<F>, cbk: (a1: A, a2: B, a3: C, a4: D, a5: E, a6: F) => G): DependentObservable<G>
+
+  /**
+   * Get the current value of the observable, or the value itself if the
+   * provided parameter was not an observable.
+   */
+  get<T>(v: O<T>): T
+  observe<T>(o: O<T>, fn: Observer<T>): () => void
+  and(...args: Array<Observable<any>>): Observable<boolean>
+  or(...args: Array<Observable<any>>): Observable<boolean>
+}
+
+// export function o<A>(a: O<A>): Observable<A>
+// export function o<A, B>(a1: O<A>, cbk: (a: A) => B): DependentObservable<B>
+// export function o<A, B, C>(a1: O<A>, a2: O<B>, cbk: (a1: A, a2: B) => C): DependentObservable<C>
+// export function o<A, B, C, D>(a1: O<A>, a2: O<B>, a3: O<C>, cbk: (a1: A, a2: B, a3: C) => D): DependentObservable<D>
+// export function o<A, B, C, D, E>(a1: O<A>, a2: O<B>, a3: O<C>, a4: O<D>, cbk: (a1: A, a2: B, a3: C, a4: D) => E): DependentObservable<E>
+// export function o<A, B, C, D, E, F>(a1: O<A>, a2: O<B>, a3: O<C>, a4: O<D>, a5: O<E>, cbk: (a1: A, a2: B, a3: C, a4: D, a5: E) => F): DependentObservable<F>
+// export function o<A, B, C, D, E, F, G>(a1: O<A>, a2: O<B>, a3: O<C>, a4: O<D>, a5: O<E>, a6: O<F>, cbk: (a1: A, a2: B, a3: C, a4: D, a5: E, a6: F) => G): DependentObservable<G>
+export var o: ObsFn = function o(...args : any[]) {
   let l = args.length
 
   // Just creating an observable.
@@ -558,23 +577,15 @@ export function o(...args : any[]) {
   )
 
   return res
-}
+} as any
 
-/**
- * Get the current value of the observable, or the value itself if the
- * provided parameter was not an observable.
- */
-export function Get(v : any) : any {
+o.get = function <T>(v: O<T>): T {
   if (v instanceof Observable) return v.get()
-  return v
+  return v as T
 }
 
 
-/**
- * Setup an onchange event on the observable, or just call the
- * onchange value once if the provided o is not an observable.
- */
-export function observe<T>(o: O<T>, fn: Observer<T>) {
+o.observe = function <T>(o: O<T>, fn: Observer<T>) {
   if (o instanceof Observable) return o.addObserver(fn)
   // the object is not observable, so the onchange value is immediately called.
   fn(o as T)
@@ -582,7 +593,8 @@ export function observe<T>(o: O<T>, fn: Observer<T>) {
   return function() { }
 }
 
-export function Or(...args : Array<Observable<any>>) : Observable<boolean> {
+
+o.or = function (...args : Array<Observable<any>>) : Observable<boolean> {
   return new DependentObservable<boolean>(args, (...args: any[]) => {
     for (var i = 0; i < args.length; i++)
       if (args[i]) return true
@@ -590,7 +602,8 @@ export function Or(...args : Array<Observable<any>>) : Observable<boolean> {
   })
 }
 
-export function And(...args: Array<Observable<any>>) : Observable<boolean> {
+
+o.and = function (...args: Array<Observable<any>>) : Observable<boolean> {
   return new DependentObservable<boolean>(args, (...args: any[]) => {
     for (var i = 0; i < args.length; i++)
       if (!args[i]) return false
