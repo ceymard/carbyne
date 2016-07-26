@@ -12,8 +12,8 @@ export {If, Then, Else, Match, Case} from './control'
 
 import {cls} from './decorators'
 import {Controller} from './controller'
-import {Atom, BasicAttributes, Appendable, AppendableBuilder, DecoratorFn, Decorator, VirtualAtom} from './atom'
-import {o, Observable, O} from './observable'
+import {Atom, BasicAttributes, Appendable, DecoratorFn, Decorator, VirtualAtom} from './atom'
+import {o} from './observable'
 
 var _re_elt_name = /^[^\.#]*/
 var _re_cls_or_id = /[\.#][^\.#]+/g

@@ -1,8 +1,8 @@
 
-import {identity, forceString, resolve, waitall} from './helpers'
-import {Observable, o, O, Observer} from './observable'
+import {forceString, resolve, waitall} from './helpers'
+import {Observable, O, Observer} from './observable'
 import {Controller} from './controller'
-import {Eventable, CarbyneListener, CarbyneEvent} from './eventable'
+import {Eventable, CarbyneEvent} from './eventable'
 
 /**
   Noteworthy events ;
@@ -423,6 +423,17 @@ export class VirtualAtom extends Atom {
     this._begin.parentNode.insertBefore(this._fragment, this._end)
   }
 
+  /**
+   * Update the children of this node, deleting everything that was
+   * present beforehand and replacing it by the arguments.
+   *
+   * It will wait for the node to empty() and not update the contents as
+   * long as empty() is not done before inserting the new contents.
+   */
+  update(a: Appendable) {
+    throw new Error('not implemented')
+  }
+
 }
 
 
@@ -436,7 +447,7 @@ export class ObservableAtom<T extends Appendable> extends VirtualAtom {
   public obs: Observable<T>
 
   private next_value: T = null
-  private last_was_text: boolean = false
+  // private last_was_text: boolean = false
 
   constructor(obs: Observable<T>) {
     super('observer')
@@ -460,9 +471,18 @@ export class ObservableAtom<T extends Appendable> extends VirtualAtom {
         value instanceof Observable
       )
 
+      // let possible_txt = this.children[0]
+      // if (possible_txt instanceof Text && is_text) {
+      //   possible_txt.textContent = forceString(value)
+      //   this.next_value = null
+      //   // FIXME should prevent promise then from executing.
+      //   return
+      // }
+
       var had_next_value = this.next_value !== null
 
       this.next_value = is_text ? forceString(value) : value
+
 
       if (had_next_value) return
 

@@ -1,5 +1,5 @@
 
-import {pathget, pathset, identity, pathjoin} from './helpers'
+import {pathget, pathset, pathjoin} from './helpers'
 
 export function isObservable<T>(o: any): o is Observable<T> {
   return o instanceof Observable

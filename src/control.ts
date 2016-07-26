@@ -1,5 +1,5 @@
 
-import {Atom, Appendable, ObservableAtom} from './atom'
+import {Appendable, ObservableAtom} from './atom'
 import {o, O, Observable} from './observable'
 
 export type ConditionalBuilder<T> = (a: T) => Appendable

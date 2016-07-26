@@ -1,5 +1,4 @@
 
-import {Eventable} from './eventable'
 import {Observable, Observer} from './observable'
 import {Atom} from './atom'
 

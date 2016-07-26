@@ -32,7 +32,6 @@ export class BindController extends Controller {
 
   linkToSelect(element: HTMLSelectElement) {
     let obs = this.obs
-    let opts = this.opts
     let atom = this.atom
 
     atom.listen('change', function(evt) {
