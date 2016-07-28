@@ -270,8 +270,9 @@ export class Atom extends Eventable {
       if (initiated) {
         this._addFragment()
         this._fragment = null
-        for (let c of this.atomChildren().filter(a => a.status !== 'mounted'))
-          c.setMounted()
+        if (this.status === 'mounted')
+          for (let c of this.atomChildren().filter(a => a.status !== 'mounted'))
+            c.setMounted()
       }
     } else if (status === 'uninitialized') {
       this._initial_children.push(elt)
