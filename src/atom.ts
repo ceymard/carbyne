@@ -1,6 +1,6 @@
 
 import {forceString, resolve, waitall} from './helpers'
-import {o, Observable, O, Observer} from './observable'
+import {o, Observable, O} from './observable'
 import {Controller} from './controller'
 import {Eventable, CarbyneEvent} from './eventable'
 
