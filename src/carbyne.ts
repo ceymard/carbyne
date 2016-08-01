@@ -1,6 +1,6 @@
 export {bind, click, cls, on, once, listen, observe} from './decorators'
 export {Controller} from './controller'
-export {o, Observable, O, ArrayObservable, Observer} from './observable'
+export {o, Observable, O, ArrayObservable, Observer, DependentObservable, PropObservable} from './observable'
 export {Atom, ObservableAtom, VirtualAtom, BasicAttributes, Appendable, Observe} from './atom'
 export {pathget, pathset, identity, noop, clonedeep, merge, debounce, throttle, resolve} from './helpers'
 export {RepeaterAtom, Repeat} from './repeat'

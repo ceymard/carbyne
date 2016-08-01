@@ -25,7 +25,7 @@ function _get_ancestry(p1: string, p2: string) {
 
 export type O<T> = T | Observable<T>
 
-export type Observer<T> = (obj : T, prop? : string) => void
+export type Observer<T> = (obj : T, prop? : string) => any
 
 export type TransformFn<T, U> = (a: T) => U
 export type Transformer<T, U> = {
@@ -542,18 +542,19 @@ export type ObsFn = {
    * provided parameter was not an observable.
    */
   get<T>(v: O<T>): T
-  observe<T>(o: O<T>, fn: Observer<T>): () => void
+
+  observe<A, B, C, D, E, F>(a: O<A>, b: O<B>, c: O<C>, d: O<D>, e: O<E>, f: O<F>, cbk: (a: A, b: B, c: C, d: D, e: E, f: F) => any): () => any;
+  observe<A, B, C, D, E>(a: O<A>, b: O<B>, c: O<C>, d: O<D>, e: O<E>, cbk: (a: A, b: B, c: C, d: D, e: E) => any): () => any;
+  observe<A, B, C, D>(a: O<A>, b: O<B>, c: O<C>, d: O<D>, cbk: (a: A, b: B, c: C, d: D) => any): () => any;
+  observe<A, B, C>(a: O<A>, b: O<B>, c: O<C>, cbk: (a: A, b: B, c: C) => any): () => any;
+  observe<A, B>(a: O<A>, b: O<B>, cbk: (a: A, b: B) => any): () => any;
+  observe<A>(a: O<A>, cbk: (a: A, prop: string) => any): () => any;
+
   and(...args: Array<Observable<any>>): Observable<boolean>
   or(...args: Array<Observable<any>>): Observable<boolean>
 }
 
-// export function o<A>(a: O<A>): Observable<A>
-// export function o<A, B>(a1: O<A>, cbk: (a: A) => B): DependentObservable<B>
-// export function o<A, B, C>(a1: O<A>, a2: O<B>, cbk: (a1: A, a2: B) => C): DependentObservable<C>
-// export function o<A, B, C, D>(a1: O<A>, a2: O<B>, a3: O<C>, cbk: (a1: A, a2: B, a3: C) => D): DependentObservable<D>
-// export function o<A, B, C, D, E>(a1: O<A>, a2: O<B>, a3: O<C>, a4: O<D>, cbk: (a1: A, a2: B, a3: C, a4: D) => E): DependentObservable<E>
-// export function o<A, B, C, D, E, F>(a1: O<A>, a2: O<B>, a3: O<C>, a4: O<D>, a5: O<E>, cbk: (a1: A, a2: B, a3: C, a4: D, a5: E) => F): DependentObservable<F>
-// export function o<A, B, C, D, E, F, G>(a1: O<A>, a2: O<B>, a3: O<C>, a4: O<D>, a5: O<E>, a6: O<F>, cbk: (a1: A, a2: B, a3: C, a4: D, a5: E, a6: F) => G): DependentObservable<G>
+
 export var o: ObsFn = function o(...args : any[]) {
   let l = args.length
 
@@ -585,12 +586,44 @@ o.get = function <T>(v: O<T>): T {
 }
 
 
-o.observe = function <T>(o: O<T>, fn: Observer<T>) {
-  if (o instanceof Observable) return o.addObserver(fn)
-  // the object is not observable, so the onchange value is immediately called.
-  fn(o as T)
-  // return a function that does nothing, since nothing is being registered.
-  return function() { }
+o.observe = function (...params: any[]): () => void {
+  let uninit: Array<() => void> = []
+  let values: Array<any> = []
+  let fn = params[params.length - 1]
+  let obs = params.slice(0, params.length - 1)
+  let len = obs.length
+
+  if (obs.length === 1) {
+    if (obs[0] instanceof Observable)
+      return obs[0].addObserver(fn)
+    fn(obs[0])
+    return () => {}
+  }
+
+  function change() {
+    if (values.length === len)
+      fn.apply(null, values)
+  }
+
+  obs.forEach((ob: O<any>) => {
+    let idx = values.length
+    values.push(undefined)
+
+    if (ob instanceof Observable) {
+      uninit.push(ob.addObserver((val: any, prop: string) => {
+        values[idx] = val
+        change()
+      }))
+    } else {
+      values[idx] = ob
+      change()
+    }
+
+  })
+
+  return () => uninit.forEach(unalloc => {
+    unalloc()
+  })
 }
 
 

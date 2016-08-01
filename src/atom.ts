@@ -1,6 +1,6 @@
 
 import {forceString, resolve, waitall} from './helpers'
-import {Observable, O, Observer} from './observable'
+import {o, Observable, O, Observer} from './observable'
 import {Controller} from './controller'
 import {Eventable, CarbyneEvent} from './eventable'
 
@@ -132,14 +132,14 @@ export class Atom extends Eventable {
    * to the life cycle of an atom. It accepts non-observables as well,
    * simply calling `cbk` with the value immediately.
    */
-  observe<T>(obs: O<T>, cbk: Observer<T>): Atom {
-
-    if (obs instanceof Observable) {
-      this.on('destroy', obs.addObserver(cbk))
-    } else {
-      cbk(obs)
-    }
-
+  observe<A, B, C, D, E, F>(a: O<A>, b: O<B>, c: O<C>, d: O<D>, e: O<E>, f: O<F>, cbk: (a: A, b: B, c: C, d: D, e: E, f: F) => any): this;
+  observe<A, B, C, D, E>(a: O<A>, b: O<B>, c: O<C>, d: O<D>, e: O<E>, cbk: (a: A, b: B, c: C, d: D, e: E) => any): this;
+  observe<A, B, C, D>(a: O<A>, b: O<B>, c: O<C>, d: O<D>, cbk: (a: A, b: B, c: C, d: D) => any): this;
+  observe<A, B, C>(a: O<A>, b: O<B>, c: O<C>, cbk: (a: A, b: B, c: C) => any): this;
+  observe<A, B>(a: O<A>, b: O<B>, cbk: (a: A, b: B) => any): this;
+  observe<A>(a: O<A>, cbk: (a: A, prop: string) => any): this;
+  observe(...a: any[]): this {
+    this.on('destroy', (o.observe as any)(...a))
     return this
   }
 
