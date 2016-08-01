@@ -52,7 +52,7 @@ export class BindController extends Controller {
     let fromObservable = (val: string) => {
       if (value_set_from_event)
         return
-      element.value = val
+      element.value = val == null ? '' : val
     }
 
     let fromEvent = (evt: Event) => {
