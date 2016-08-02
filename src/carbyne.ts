@@ -132,10 +132,9 @@ export var c: C = function c(elt: Builder, attrs: BasicAttributes = {}, ...child
 
 c.createElement = c
 
-export function Fragment(attrs: {}, children: Appendable): Appendable {
-  // let res = new VirtualAtom('fragment', {}, [children])
-  // return res
-  return children
+export function Fragment(attrs: {}, children: Appendable): Atom {
+  // ugly, ugly hack...
+  return children as any
 }
 
 
