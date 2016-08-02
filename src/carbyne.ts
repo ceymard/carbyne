@@ -12,7 +12,7 @@ export {If, Then, Else, Match, Case} from './control'
 
 import {cls} from './decorators'
 import {Controller} from './controller'
-import {Atom, BasicAttributes, Appendable, DecoratorFn, Decorator, VirtualAtom} from './atom'
+import {Atom, BasicAttributes, Appendable, DecoratorFn, Decorator} from './atom'
 import {o} from './observable'
 
 var _re_elt_name = /^[^\.#]*/
@@ -132,9 +132,10 @@ export var c: C = function c(elt: Builder, attrs: BasicAttributes = {}, ...child
 
 c.createElement = c
 
-export function Fragment(attrs: {}, children: Appendable): Atom {
-  let res = new VirtualAtom('fragment', {}, [children])
-  return res
+export function Fragment(attrs: {}, children: Appendable): Appendable {
+  // let res = new VirtualAtom('fragment', {}, [children])
+  // return res
+  return children
 }
 
 
