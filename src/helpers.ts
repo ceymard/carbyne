@@ -165,40 +165,40 @@ export function throttle(ms: number) {
 }
 
 
-function isThenable<T>(obj: any) : obj is Thenable<T> {
+function isPromise<T>(obj: any) : obj is Promise<T> {
   return obj && obj.then
 }
 
 /**
  * A helper that calls a thenable instantly instead of waiting for the next tick.
  */
-export function resolve<T>(value: T): Thenable<T> {
+export function resolve<T>(value: T): Promise<T> {
   return {
     __value__: value,
-    then<U>(onFulfilled: (a: T) => U | Thenable<U>, onRejected?: (error: any) => U | Thenable<U>): Thenable<U> {
+    then<U>(onFulfilled: (a: T) => U | Promise<U>, onRejected?: (error: any) => U | Promise<U>): Promise<U> {
       let res = onFulfilled(value)
-      if (isThenable<U>(res)) {
+      if (isPromise<U>(res)) {
         return res
       }
       return resolve(res)
     },
 
-    catch<U>(onRejected?: (error: any) => U | Thenable<U>): Thenable<U> {
+    catch<U>(onRejected?: (error: any) => U | Promise<U>): Promise<U> {
       return null
       // return reject(onRejected(error))
     }
-  } as Thenable<T>
+  } as Promise<T>
 }
 
 
 /**
  * An internal method that avoids launching new promises
  */
-export function waitall(proms: any[]): Thenable<any> {
+export function waitall(proms: any[]): Promise<any> {
   let has_promise = false
 
   for (let p of proms) {
-    if (p && !p.__value__ && isThenable(p)) {
+    if (p && !p.__value__ && isPromise(p)) {
       has_promise = true
       break
     }

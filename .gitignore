@@ -4,3 +4,4 @@ elt
 *.d.ts
 *.map
 ._*
+typings

@@ -14,7 +14,7 @@
     ],
     "files": [
         "./src/carbyne.ts",
-        "./typings/es6-promise/es6-promise.d.ts"
+        "./typings/index.d.ts"
     ]
 
 }
