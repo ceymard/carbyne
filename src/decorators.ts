@@ -1,6 +1,6 @@
 
 import {Controller} from './controller'
-import {Observable, O, Observer} from './observable'
+import {Observable, O} from './observable'
 import {Atom} from './atom'
 import {CarbyneEvent, CarbyneListener} from './eventable'
 
@@ -148,9 +148,15 @@ export function listen(name: string, cbk: EventListener) {
 }
 
 
-export function observe<T>(obs: Observable<T>, fn: Observer<T>) {
+export function observe<A, B, C, D, E, F>(a: O<A>, b: O<B>, c: O<C>, d: O<D>, e: O<E>, f: O<F>, cbk: (a: A, b: B, c: C, d: D, e: E, f: F) => any): (a: Atom) => Atom;
+export function observe<A, B, C, D, E>(a: O<A>, b: O<B>, c: O<C>, d: O<D>, e: O<E>, cbk: (a: A, b: B, c: C, d: D, e: E) => any): (a: Atom) => Atom;
+export function observe<A, B, C, D>(a: O<A>, b: O<B>, c: O<C>, d: O<D>, cbk: (a: A, b: B, c: C, d: D) => any): (a: Atom) => Atom;
+export function observe<A, B, C>(a: O<A>, b: O<B>, c: O<C>, cbk: (a: A, b: B, c: C) => any): (a: Atom) => Atom;
+export function observe<A, B>(a: O<A>, b: O<B>, cbk: (a: A, b: B) => any): (a: Atom) => Atom;
+export function observe<A>(a: O<A>, cbk: (a: A, prop: string) => any): (a: Atom) => Atom;
+export function observe(...params: any[]) {
   return function(atom: Atom): Atom {
-    return atom.observe(obs, fn)
+    return atom.observe.apply(atom, params)
   }
 }
 
